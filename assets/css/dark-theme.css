@@ -1,0 +1,89 @@
+/* Dark Theme for Paws.money */
+
+:root {
+    --dark-bg: #0a192f;
+    --dark-card-bg: #172a45;
+    --dark-text: #c8d6e5;
+    --dark-heading: #e6f1ff;
+    --dark-primary: #54a0ff;
+    --dark-primary-hover: #2e86de;
+    --dark-border: #3a506b;
+}
+
+body.dark-theme {
+    background-color: var(--dark-bg);
+    color: var(--dark-text);
+}
+
+.dark-theme .navbar, .dark-theme .footer {
+    background-color: var(--dark-card-bg) !important;
+    border-color: var(--dark-border);
+}
+
+.dark-theme .navbar-brand, .dark-theme .nav-link, .dark-theme .footer-text {
+    color: var(--dark-heading) !important;
+}
+
+.dark-theme .nav-link:hover {
+    color: var(--dark-primary) !important;
+}
+
+.dark-theme .card {
+    background-color: var(--dark-card-bg);
+    border-color: var(--dark-border);
+    color: var(--dark-text);
+}
+
+.dark-theme .card-title, .dark-theme h1, .dark-theme h2, .dark-theme h3, .dark-theme h4, .dark-theme h5 {
+    color: var(--dark-heading);
+}
+
+.dark-theme .form-control {
+    background-color: var(--dark-bg);
+    border-color: var(--dark-border);
+    color: var(--dark-text);
+}
+
+.dark-theme .form-control:focus {
+    background-color: var(--dark-bg);
+    color: var(--dark-text);
+    border-color: var(--dark-primary);
+    box-shadow: 0 0 0 0.2rem rgba(84, 160, 255, 0.25);
+}
+
+.dark-theme .btn-primary {
+    background-color: var(--dark-primary);
+    border-color: var(--dark-primary);
+}
+
+.dark-theme .btn-primary:hover {
+    background-color: var(--dark-primary-hover);
+    border-color: var(--dark-primary-hover);
+}
+
+.dark-theme .alert-success {
+    background-color: #2e86de;
+    color: #e6f1ff;
+    border-color: #54a0ff;
+}
+
+.dark-theme .alert-danger {
+    background-color: #c23616;
+    color: #e6f1ff;
+    border-color: #e84118;
+}
+
+.dark-theme .modal-content {
+    background-color: var(--dark-card-bg);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+
+.dark-theme .modal-header, .dark-theme .modal-footer {
+    border-bottom-color: var(--dark-border);
+    border-top-color: var(--dark-border);
+}
+
+.dark-theme .close {
+    color: var(--dark-text);
+}

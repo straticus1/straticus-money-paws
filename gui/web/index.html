@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Paws - Modern GUI</title>
+    <meta name="description" content="Modern web interface for Money Paws cryptocurrency gaming platform">
+    <meta name="author" content="Ryan Coleman <coleman.ryan@gmail.com>">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#667eea">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Money Paws">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/themes.css">
+    
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+</head>
+<body class="theme-light">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>🐾 Money Paws</h2>
+            <p>Loading your crypto gaming experience...</p>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen active">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <h1>🐾 Money Paws</h1>
+                    <p>Modern Crypto Gaming Interface</p>
+                    <small>Developed by Ryan Coleman</small>
+                </div>
+                
+                <div class="login-tabs">
+                    <button class="tab-btn active" data-tab="login">Login</button>
+                    <button class="tab-btn" data-tab="register">Register</button>
+                </div>
+                
+                <!-- Login Form -->
+                <form id="login-form" class="auth-form active">
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                
+                <!-- Register Form -->
+                <form id="register-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="register-name">Full Name</label>
+                        <input type="text" id="register-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-confirm">Confirm Password</label>
+                        <input type="password" id="register-confirm" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </form>
+                
+                <!-- OAuth Options -->
+                <div class="oauth-section">
+                    <div class="divider">
+                        <span>Or continue with</span>
+                    </div>
+                    <div class="oauth-buttons">
+                        <button class="btn btn-oauth google" data-provider="google">
+                            <span class="oauth-icon">G</span> Google
+                        </button>
+                        <button class="btn btn-oauth facebook" data-provider="facebook">
+                            <span class="oauth-icon">f</span> Facebook
+                        </button>
+                        <button class="btn btn-oauth apple" data-provider="apple">
+                            <span class="oauth-icon">🍎</span> Apple
+                        </button>
+                        <button class="btn btn-oauth twitter" data-provider="twitter">
+                            <span class="oauth-icon">🐦</span> Twitter
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="app-screen" class="screen">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <h1>🐾 Money Paws</h1>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-item active" data-view="dashboard">Dashboard</button>
+                <button class="nav-item" data-view="gaming">Gaming</button>
+                <button class="nav-item" data-view="balances">Balances</button>
+                <button class="nav-item" data-view="profile">Profile</button>
+            </div>
+            <div class="nav-actions">
+                <button class="btn btn-secondary" id="theme-toggle">🌙</button>
+                <button class="btn btn-outline" id="logout-btn">Logout</button>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="view active">
+                <div class="dashboard-header">
+                    <h2>Welcome back, <span id="user-name">User</span>!</h2>
+                    <p>Your crypto gaming dashboard</p>
+                </div>
+                
+                <div class="dashboard-grid">
+                    <!-- Portfolio Overview -->
+                    <div class="card portfolio-card">
+                        <h3>Portfolio Overview</h3>
+                        <div class="portfolio-value">
+                            <span class="value" id="total-portfolio">$0.00</span>
+                            <span class="change positive" id="portfolio-change">+0.00%</span>
+                        </div>
+                        <canvas id="portfolio-chart"></canvas>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="card stats-card">
+                        <h3>Quick Stats</h3>
+                        <div class="stats-grid">
+                            <div class="stat">
+                                <span class="stat-value" id="games-played">0</span>
+                                <span class="stat-label">Games Played</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value" id="total-winnings">$0.00</span>
+                                <span class="stat-label">Total Winnings</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value" id="win-rate">0%</span>
+                                <span class="stat-label">Win Rate</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Activity -->
+                    <div class="card activity-card">
+                        <h3>Recent Activity</h3>
+                        <div id="recent-activity" class="activity-list">
+                            <div class="activity-item">
+                                <span class="activity-icon">🎮</span>
+                                <span class="activity-text">Welcome to Money Paws!</span>
+                                <span class="activity-time">Just now</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gaming View -->
+            <div id="gaming-view" class="view">
+                <div class="gaming-header">
+                    <h2>🎮 Crypto Gaming</h2>
+                    <p>Play games with real cryptocurrency</p>
+                </div>
+                
+                <div class="gaming-content">
+                    <!-- Game Selection -->
+                    <div class="card game-selection">
+                        <h3>Available Games</h3>
+                        <div class="games-grid">
+                            <div class="game-card active" data-game="coinflip">
+                                <div class="game-icon">🪙</div>
+                                <h4>Coin Flip</h4>
+                                <p>Double or nothing</p>
+                            </div>
+                            <div class="game-card disabled">
+                                <div class="game-icon">🎲</div>
+                                <h4>Dice Roll</h4>
+                                <p>Coming Soon</p>
+                            </div>
+                            <div class="game-card disabled">
+                                <div class="game-icon">🎰</div>
+                                <h4>Slots</h4>
+                                <p>Coming Soon</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Game Interface -->
+                    <div class="card game-interface">
+                        <div id="coinflip-game" class="game-content active">
+                            <h3>Coin Flip Game</h3>
+                            <div class="game-setup">
+                                <div class="form-group">
+                                    <label for="game-crypto">Cryptocurrency</label>
+                                    <select id="game-crypto">
+                                        <option value="">Select crypto...</option>
+                                        <option value="BTC">Bitcoin (BTC)</option>
+                                        <option value="ETH">Ethereum (ETH)</option>
+                                        <option value="USDC">USD Coin (USDC)</option>
+                                        <option value="SOL">Solana (SOL)</option>
+                                        <option value="XRP">Ripple (XRP)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="bet-amount">Bet Amount</label>
+                                    <input type="number" id="bet-amount" step="0.00000001" min="0">
+                                    <small>Available: <span id="available-balance">0</span></small>
+                                </div>
+                                <div class="choice-buttons">
+                                    <button class="btn btn-choice" data-choice="heads">Heads</button>
+                                    <button class="btn btn-choice" data-choice="tails">Tails</button>
+                                </div>
+                                <button class="btn btn-primary btn-large" id="play-game" disabled>Play Game</button>
+                            </div>
+                            
+                            <!-- Game Animation -->
+                            <div class="game-animation" id="game-animation">
+                                <div class="coin" id="coin">🪙</div>
+                                <div class="result" id="game-result"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balances View -->
+            <div id="balances-view" class="view">
+                <div class="balances-header">
+                    <h2>💰 Crypto Balances</h2>
+                    <p>Your cryptocurrency portfolio</p>
+                </div>
+                
+                <div class="balances-content">
+                    <div class="card balances-card">
+                        <div class="balances-summary">
+                            <div class="total-value">
+                                <h3>Total Portfolio Value</h3>
+                                <span class="value" id="total-value">$0.00</span>
+                            </div>
+                            <button class="btn btn-primary">Deposit Crypto</button>
+                        </div>
+                        
+                        <div class="balances-list" id="balances-list">
+                            <!-- Balances will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div class="card chart-card">
+                        <h3>Portfolio Distribution</h3>
+                        <canvas id="balance-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile View -->
+            <div id="profile-view" class="view">
+                <div class="profile-header">
+                    <h2>👤 Profile</h2>
+                    <p>Account information and settings</p>
+                </div>
+                
+                <div class="profile-content">
+                    <div class="card profile-card">
+                        <div class="profile-info">
+                            <div class="profile-avatar">
+                                <span id="profile-avatar">👤</span>
+                            </div>
+                            <div class="profile-details">
+                                <h3 id="profile-name">User Name</h3>
+                                <p id="profile-email">user@example.com</p>
+                                <span class="profile-badge" id="profile-provider">Local Account</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card settings-card">
+                        <h3>Settings</h3>
+                        <div class="settings-list">
+                            <div class="setting-item">
+                                <span>Dark Mode</span>
+                                <button class="toggle-switch" id="dark-mode-toggle">
+                                    <span class="toggle-slider"></span>
+                                </button>
+                            </div>
+                            <div class="setting-item">
+                                <span>Sound Effects</span>
+                                <button class="toggle-switch active" id="sound-toggle">
+                                    <span class="toggle-slider"></span>
+                                </button>
+                            </div>
+                            <div class="setting-item">
+                                <span>Notifications</span>
+                                <button class="toggle-switch active" id="notifications-toggle">
+                                    <span class="toggle-slider"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification System -->
+    <div id="notifications" class="notifications"></div>
+
+    <!-- Scripts -->
+    <script src="js/api-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/gaming.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

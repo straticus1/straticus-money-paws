@@ -1,0 +1,87 @@
+{
+  "name": "money-paws-desktop",
+  "version": "2.0.0",
+  "description": "Money Paws Desktop - Multi-platform cryptocurrency-powered pet platform with accessibility support. Developed and Designed by Ryan Coleman. <coleman.ryan@gmail.com>",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build-mac": "electron-builder --mac",
+    "build-win": "electron-builder --win",
+    "build-linux": "electron-builder --linux",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --publish=never"
+  },
+  "keywords": [
+    "cryptocurrency",
+    "gaming",
+    "pets",
+    "electron",
+    "desktop"
+  ],
+  "author": "Ryan Coleman <coleman.ryan@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/ryancoleman/money-paws",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ryancoleman/money-paws.git"
+  },
+  "devDependencies": {
+    "electron": "^26.0.0",
+    "electron-builder": "^24.6.4"
+  },
+  "dependencies": {
+    "axios": "^1.5.0",
+    "electron-store": "^8.1.0",
+    "electron-updater": "^6.1.4"
+  },
+  "build": {
+    "appId": "com.ryancoleman.moneypaws",
+    "productName": "Money Paws",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "assets/**/*",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.games",
+      "icon": "assets/icon.icns",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "linux": {
+      "icon": "assets/icon.png",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

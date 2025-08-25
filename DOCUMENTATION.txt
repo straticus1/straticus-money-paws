@@ -1,0 +1,88 @@
+Money Paws - Technical Documentation
+====================================
+
+Developer: Ryan Coleman <coleman.ryan@gmail.com>
+Version: 2.0.0
+
+## 1. Project Overview
+
+Money Paws is a web-based platform that combines a social pet gallery with cryptocurrency-powered gaming and e-commerce. It allows users to manage virtual pets, interact with a community, and use various cryptocurrencies for in-platform transactions.
+
+## 2. Technology Stack
+
+- **Backend**: PHP 8.0+ running on Apache/Nginx.
+- **Database**: MySQL 8.0+.
+- **Frontend**: HTML5, CSS3, Vanilla JavaScript (ES6+).
+- **Dependencies**: Managed via Composer.
+
+## 3. Key Features & Implementation
+
+- **Authentication**: Standard email/password registration with bcrypt hashing. OAuth2 integration for Google, Facebook, Apple, and Twitter/X with secure state validation.
+
+- **Cryptocurrency**: Utilizes the Coinbase Commerce API for handling payments and deposits in BTC, ETH, USDC, SOL, and XRP. Real-time price data is fetched from external APIs with fallback mechanisms.
+
+- **Pet Management**: Users can upload pet images with secure file validation. Pet stats (hunger, happiness) are managed with time-based degradation. Includes privacy controls and cross-user interactions.
+
+- **AI Generation**: Integrates with OpenAI (GPT-4 Vision) and Stability AI (SDXL) APIs to generate unique pet images. Supports multiple styles and animal types with crypto payment processing.
+
+- **Store & Inventory**: Comprehensive virtual store with food, treats, toys, and accessories. Crypto-powered purchases with real-time price conversion and inventory management.
+
+- **Messaging System**: Full-featured private messaging with conversation threading, read/unread status, and secure authorization checks. Built on normalized database schema.
+
+- **Real-time Notifications**: Advanced notification system for messages, pet interactions, adoptions, likes, and social activities. Efficient unread count API and notification history.
+
+- **Vacation Mode**: Sophisticated delegation system allowing users to assign pet care to trusted community members with reserved funding for automated care.
+
+- **Abandoned Pet Adoption**: Community rescue system automatically detecting pets uncared for 30+ days, enabling adoption with transfer of ownership.
+
+- **Enhanced Security**: 
+  - Multi-method Two-Factor Authentication (email + TOTP)
+  - Comprehensive security event logging
+  - Withdrawal verification with mandatory 2FA
+  - Advanced CSRF protection
+  - Session security with regeneration
+
+- **Multi-Platform Architecture**: 
+  - Responsive web application with PWA capabilities
+  - Electron-based desktop app with native OS integration
+  - CLI client with full accessibility support (screen readers, large print, audio feedback)
+  - Cross-platform codebase supporting Windows, macOS, and Linux
+
+- **Community & Social Features**: 
+  - Comprehensive leaderboard system
+  - Social engagement tracking
+  - Cross-user pet interactions
+  - Community-driven content moderation
+  - User activity analytics
+
+## 4. Project Structure
+
+- `/api/`: Contains all public-facing API endpoints including new notification and messaging APIs.
+- `/assets/`: Holds CSS, JavaScript, and image files.
+- `/config/`: Stores configuration files, primarily `database.php` for credentials and API keys.
+- `/database/`: Includes the SQL schema for MySQL and SQLite databases.
+- `/includes/`: Core application logic, functions, security utilities, and database connection handlers.
+- `/oauth/`: Handlers for all OAuth2 authentication flows.
+- `/uploads/`: Secure storage for user-uploaded pet images.
+- `/cli/`: Accessibility-focused command-line interface for visually impaired users.
+- `/gui/`: Cross-platform desktop and web applications.
+- `/admin/`: Administrative interface for user and content management.
+
+## 5. Security
+
+- **SQL Injection**: Prevented by using prepared statements (PDO) for all database queries.
+- **XSS**: Mitigated by consistently escaping user-generated content with `htmlspecialchars()` before rendering.
+- **CSRF**: Forms are intended to be protected with CSRF tokens (though a recent audit found this was not fully implemented).
+- **File Uploads**: Strict validation of file types and sizes, with secure storage in non-web-accessible directories where possible.
+- **Authorization**: Logic in core functions (`functions.php`) ensures users can only access and modify their own data, such as messages and conversations.
+
+## 6. Installation & Setup
+
+Refer to `INSTALL.md` for detailed instructions. The platform can be installed via an automated shell script (`install.sh`) or manually. A web-based installer (`install.php`) is used for final configuration.
+
+## 7. Future Development
+
+- Mobile application development.
+- NFT marketplace integration.
+- Advanced AI features, including pet breeding.
+- Expanded social and community features.

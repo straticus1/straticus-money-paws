@@ -1,0 +1,808 @@
+<?php
+/**
+ * Money Paws - Cryptocurrency-Powered Pet Platform
+ * Developed and Designed by Ryan Coleman. <coleman.ryan@gmail.com>
+ */
+session_start();
+require_once 'config/database.php';
+
+// Demo account functions (only work in developer mode)
+function getDemoUserByEmail($email) {
+    if (!defined('DEVELOPER_MODE') || !DEVELOPER_MODE) return null;
+    
+    // Check demo admin account
+    if (defined('DEMO_ADMIN_ENABLED') && DEMO_ADMIN_ENABLED && 
+        defined('DEMO_ADMIN_EMAIL') && $email === DEMO_ADMIN_EMAIL) {
+        return [
+            'id' => 999999, // Special ID for demo admin
+            'email' => DEMO_ADMIN_EMAIL,
+            'password' => password_hash(DEMO_ADMIN_PASSWORD, PASSWORD_DEFAULT),
+            'name' => DEMO_ADMIN_NAME,
+            'provider' => 'demo',
+            'is_admin' => true,
+            'created_at' => '2024-01-01 00:00:00'
+        ];
+    }
+    
+    // Check demo user account
+    if (defined('DEMO_USER_ENABLED') && DEMO_USER_ENABLED && 
+        defined('DEMO_USER_EMAIL') && $email === DEMO_USER_EMAIL) {
+        return [
+            'id' => 999998, // Special ID for demo user
+            'email' => DEMO_USER_EMAIL,
+            'password' => password_hash(DEMO_USER_PASSWORD, PASSWORD_DEFAULT),
+            'name' => DEMO_USER_NAME,
+            'provider' => 'demo',
+            'is_admin' => false,
+            'created_at' => '2024-01-01 00:00:00'
+        ];
+    }
+    
+    return null;
+}
+
+function getDemoUserById($id) {
+    if (!defined('DEVELOPER_MODE') || !DEVELOPER_MODE) return null;
+    
+    // Check demo admin account
+    if ($id == 999999 && defined('DEMO_ADMIN_ENABLED') && DEMO_ADMIN_ENABLED) {
+        return [
+            'id' => 999999,
+            'email' => DEMO_ADMIN_EMAIL,
+            'password' => password_hash(DEMO_ADMIN_PASSWORD, PASSWORD_DEFAULT),
+            'name' => DEMO_ADMIN_NAME,
+            'provider' => 'demo',
+            'is_admin' => true,
+            'created_at' => '2024-01-01 00:00:00'
+        ];
+    }
+    
+    // Check demo user account
+    if ($id == 999998 && defined('DEMO_USER_ENABLED') && DEMO_USER_ENABLED) {
+        return [
+            'id' => 999998,
+            'email' => DEMO_USER_EMAIL,
+            'password' => password_hash(DEMO_USER_PASSWORD, PASSWORD_DEFAULT),
+            'name' => DEMO_USER_NAME,
+            'provider' => 'demo',
+            'is_admin' => false,
+            'created_at' => '2024-01-01 00:00:00'
+        ];
+    }
+    
+    return null;
+}
+
+function authenticateDemoUser($email, $password) {
+    if (!defined('DEVELOPER_MODE') || !DEVELOPER_MODE) return false;
+    
+    // Check demo admin
+    if (defined('DEMO_ADMIN_ENABLED') && DEMO_ADMIN_ENABLED && 
+        defined('DEMO_ADMIN_EMAIL') && $email === DEMO_ADMIN_EMAIL &&
+        defined('DEMO_ADMIN_PASSWORD') && $password === DEMO_ADMIN_PASSWORD) {
+        return 999999; // Return demo admin ID
+    }
+    
+    // Check demo user
+    if (defined('DEMO_USER_ENABLED') && DEMO_USER_ENABLED && 
+        defined('DEMO_USER_EMAIL') && $email === DEMO_USER_EMAIL &&
+        defined('DEMO_USER_PASSWORD') && $password === DEMO_USER_PASSWORD) {
+        return 999998; // Return demo user ID
+    }
+    
+    return false;
+}
+
+// User authentication functions
+function isLoggedIn() {
+    return isset($_SESSION['user_id']);
+}
+
+function isAdmin() {
+    return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
+}
+
+function toggleUserAdminStatus($userId, $isAdmin) {
+    global $pdo;
+    if (!$pdo) return false;
+
+    $stmt = $pdo->prepare("UPDATE users SET is_admin = ? WHERE id = ?");
+    return $stmt->execute([$isAdmin, $userId]);
+}
+
+function getUserById($userId) {
+    global $pdo;
+    if (!$pdo) return null;
+
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+function getUser2FASettings($userId) {
+    global $pdo;
+    if (!$pdo) return null;
+
+    $stmt = $pdo->prepare("SELECT * FROM user_2fa_settings WHERE user_id = ?");
+    $stmt->execute([$userId]);
+    $settings = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$settings) {
+        return [
+            'mfa_enabled' => false,
+            'mfa_method' => null,
+            'phone_number' => null,
+            'totp_secret' => null
+        ];
+    }
+
+    return $settings;
+}
+
+function updateUser2FASettings($userId, $mfa_enabled, $mfa_method = null, $phone_number = null, $totp_secret = null) {
+    global $pdo;
+    if (!$pdo) return false;
+
+    $stmt = $pdo->prepare("SELECT user_id FROM user_2fa_settings WHERE user_id = ?");
+    $stmt->execute([$userId]);
+    $exists = $stmt->fetch();
+
+    if ($exists) {
+        $stmt = $pdo->prepare(
+            "UPDATE user_2fa_settings SET mfa_enabled = ?, mfa_method = ?, phone_number = ?, totp_secret = ? WHERE user_id = ?"
+        );
+        return $stmt->execute([$mfa_enabled, $mfa_method, $phone_number, $totp_secret, $userId]);
+    } else {
+        $stmt = $pdo->prepare(
+            "INSERT INTO user_2fa_settings (user_id, mfa_enabled, mfa_method, phone_number, totp_secret) VALUES (?, ?, ?, ?, ?)"
+        );
+        return $stmt->execute([$userId, $mfa_enabled, $mfa_method, $phone_number, $totp_secret]);
+    }
+}
+
+function requireLogin() {
+    if (!isLoggedIn()) {
+        header('Location: login.php');
+        exit;
+    }
+}
+
+
+function getUserByEmail($email) {
+    global $pdo;
+    
+    // Check demo accounts first (only in developer mode)
+    if (defined('DEVELOPER_MODE') && DEVELOPER_MODE) {
+        $demoUser = getDemoUserByEmail($email);
+        if ($demoUser) return $demoUser;
+    }
+    
+    if (!$pdo) return null;
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+    $stmt->execute([$email]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+function getUserByName($name) {
+    global $pdo;
+    if (!$pdo) return null;
+
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE name = ?");
+    $stmt->execute([$name]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+function createUser($email, $password, $name, $provider = 'local') {
+    global $pdo;
+    if (!$pdo) return false;
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+    $stmt = $pdo->prepare("INSERT INTO users (email, password, name, provider, created_at) VALUES (?, ?, ?, ?, NOW())");
+    return $stmt->execute([$email, $hashedPassword, $name, $provider]);
+}
+
+function loginUser($userId) {
+    $_SESSION['user_id'] = $userId;
+    $_SESSION['logged_in'] = true;
+}
+
+function logoutUser() {
+    session_destroy();
+    header('Location: index.php');
+    exit;
+}
+
+// Pet functions
+function uploadPet($userId, $filename, $originalName, $description = '') {
+    global $pdo;
+    if (!$pdo) return false;
+    $stmt = $pdo->prepare("INSERT INTO pets (user_id, filename, original_name, description, uploaded_at) VALUES (?, ?, ?, ?, NOW())");
+    return $stmt->execute([$userId, $filename, $originalName, $description]);
+}
+
+function getAllPets($limit = 20, $offset = 0) {
+    global $pdo;
+    if (!$pdo) return [];
+    $stmt = $pdo->prepare("SELECT p.*, u.name as owner_name FROM pets p JOIN users u ON p.user_id = u.id WHERE p.is_public = 1 ORDER BY p.uploaded_at DESC LIMIT ? OFFSET ?");
+    $stmt->execute([$limit, $offset]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getUserPets($userId) {
+    global $pdo;
+    if (!$pdo) return [];
+    $stmt = $pdo->prepare("SELECT * FROM pets WHERE user_id = ? ORDER BY uploaded_at DESC");
+    $stmt->execute([$userId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getNotifications($userId) {
+    global $pdo;
+    if (!$pdo) return [];
+
+    $stmt = $pdo->prepare("SELECT n.*, s.username as sender_username, p.name as pet_name FROM notifications n JOIN users s ON n.sender_user_id = s.id LEFT JOIN pets p ON n.pet_id = p.id WHERE n.recipient_user_id = ? ORDER BY n.created_at DESC");
+    $stmt->execute([$userId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getUnreadNotifications($userId) {
+    global $pdo;
+    if (!$pdo) return [];
+
+    $stmt = $pdo->prepare("SELECT * FROM notifications WHERE recipient_user_id = ? AND is_read = 0 ORDER BY created_at DESC");
+    $stmt->execute([$userId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getUnreadNotificationCount($userId) {
+    global $pdo;
+    if (!$pdo) return 0;
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE recipient_user_id = ? AND is_read = 0");
+    $stmt->execute([$userId]);
+    return $stmt->fetchColumn();
+}
+
+function markNotificationsAsRead($userId) {
+    global $pdo;
+    if (!$pdo) return false;
+
+    $stmt = $pdo->prepare("UPDATE notifications SET is_read = 1 WHERE recipient_user_id = ?");
+    return $stmt->execute([$userId]);
+}
+
+function createNotification($recipient_user_id, $sender_user_id, $pet_id, $interaction_id, $notification_type) {
+    global $pdo;
+    if (!$pdo) return false;
+
+    // Don't create a notification if the user is interacting with their own pet
+    if ($recipient_user_id == $sender_user_id) {
+        return false;
+    }
+
+    $stmt = $pdo->prepare(
+        "INSERT INTO notifications (recipient_user_id, sender_user_id, pet_id, interaction_id, notification_type) VALUES (?, ?, ?, ?, ?)"
+    );
+    return $stmt->execute([$recipient_user_id, $sender_user_id, $pet_id, $interaction_id, $notification_type]);
+}
+
+function time_ago($datetime, $full = false) {
+    $now = new DateTime;
+    $ago = new DateTime($datetime);
+    $diff = $now->diff($ago);
+
+    $weeks = floor($diff->d / 7);
+    $days = $diff->d - ($weeks * 7);
+
+    $time_parts = [
+        'y' => $diff->y,
+        'm' => $diff->m,
+        'w' => $weeks,
+        'd' => $days,
+        'h' => $diff->h,
+        'i' => $diff->i,
+        's' => $diff->s,
+    ];
+
+    $string_map = [
+        'y' => 'year',
+        'm' => 'month',
+        'w' => 'week',
+        'd' => 'day',
+        'h' => 'hour',
+        'i' => 'minute',
+        's' => 'second',
+    ];
+
+    $string = [];
+    foreach ($time_parts as $k => $v) {
+        if ($v) {
+            $string[$k] = $v . ' ' . $string_map[$k] . ($v > 1 ? 's' : '');
+        }
+    }
+
+    if (empty($string)) {
+        return 'just now';
+    }
+
+    if (!$full) {
+        $string = array_slice($string, 0, 1);
+    }
+    
+    return implode(', ', $string) . ' ago';
+}
+
+function getTopPets($limit = 10) {
+    global $pdo;
+    if (!$pdo) return [];
+
+    $stmt = $pdo->prepare("SELECT p.*, u.username FROM pets p JOIN users u ON p.user_id = u.id ORDER BY p.likes_count DESC LIMIT ?");
+    $stmt->execute([$limit]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getTopUsersByLikes($limit = 10) {
+    global $pdo;
+    if (!$pdo) return [];
+
+    $stmt = $pdo->prepare("SELECT u.id, u.username, SUM(p.likes_count) as total_likes FROM users u JOIN pets p ON u.id = p.user_id GROUP BY u.id, u.username ORDER BY total_likes DESC LIMIT ?");
+    $stmt->execute([$limit]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getMostActiveUsers($limit = 10) {
+    global $pdo;
+    if (!$pdo) return [];
+
+    $stmt = $pdo->prepare("SELECT u.id, u.username, COUNT(pi.id) as interaction_count FROM users u JOIN pet_interactions pi ON u.id = pi.user_id GROUP BY u.id, u.username ORDER BY interaction_count DESC LIMIT ?");
+    $stmt->execute([$limit]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function searchSite($query) {
+    global $pdo;
+    if (!$pdo) return ['users' => [], 'pets' => []];
+
+    $searchTerm = '%' . $query . '%';
+
+    // Search for users
+    $stmt = $pdo->prepare("SELECT id, username FROM users WHERE username LIKE ? LIMIT 10");
+    $stmt->execute([$searchTerm]);
+    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Search for pets
+    $stmt = $pdo->prepare("SELECT p.id, p.name, p.user_id, u.username FROM pets p JOIN users u ON p.user_id = u.id WHERE p.name LIKE ? AND p.is_public = 1 LIMIT 10");
+    $stmt->execute([$searchTerm]);
+    $pets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    return ['users' => $users, 'pets' => $pets];
+}
+
+function getPublicUserPets($userId) {
+    global $pdo;
+    if (!$pdo) return [];
+    $stmt = $pdo->prepare("SELECT * FROM pets WHERE user_id = ? AND is_public = 1 ORDER BY uploaded_at DESC");
+    $stmt->execute([$userId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function setVacationMode($userId, $delegateId, $reservedFunds) {
+    global $pdo;
+    if (!$pdo) return false;
+
+    $stmt = $pdo->prepare("
+        UPDATE users 
+        SET is_on_vacation = 1, 
+            vacation_delegate_id = ?, 
+            vacation_reserved_funds = ?, 
+            vacation_start_date = NOW()
+        WHERE id = ?
+    ");
+    return $stmt->execute([$delegateId, $reservedFunds, $userId]);
+}
+
+function disableVacationMode($userId) {
+    global $pdo;
+    if (!$pdo) return false;
+
+    // Here you might want to handle the return of reserved funds.
+    // For now, we'll just clear the vacation status.
+    $stmt = $pdo->prepare("
+        UPDATE users
+        SET is_on_vacation = 0,
+            vacation_delegate_id = NULL,
+            vacation_reserved_funds = 0.00,
+            vacation_start_date = NULL
+        WHERE id = ?
+    ");
+    return $stmt->execute([$userId]);
+}
+
+function getAbandonedPets($limit = 12, $offset = 0) {
+    global $pdo;
+    if (!$pdo) return [];
+
+    $stmt = $pdo->prepare("
+        SELECT p.*, u.name as owner_name, ps.last_cared_for
+        FROM pets p
+        JOIN users u ON p.user_id = u.id
+        JOIN pet_stats ps ON p.id = ps.pet_id
+        WHERE ps.last_cared_for < DATE_SUB(NOW(), INTERVAL 30 DAY)
+        ORDER BY ps.last_cared_for ASC
+        LIMIT ? OFFSET ?
+    ");
+    $stmt->execute([$limit, $offset]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getAllPetsForAdmin() {
+    global $pdo;
+    if (!$pdo) return [];
+
+    $stmt = $pdo->query("
+        SELECT p.id, p.original_name, p.description, p.uploaded_at, u.name as owner_name, p.is_public
+        FROM pets p
+        JOIN users u ON p.user_id = u.id
+        ORDER BY p.uploaded_at DESC
+    ");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getSiteStatistics() {
+    global $pdo;
+    if (!$pdo) {
+        return ['total_users' => 0, 'total_pets' => 0, 'total_interactions' => 0];
+    }
+
+    $stats = [];
+
+    $stats['total_users'] = $pdo->query('SELECT count(*) FROM users')->fetchColumn();
+    $stats['total_pets'] = $pdo->query('SELECT count(*) FROM pets')->fetchColumn();
+    $stats['total_interactions'] = $pdo->query('SELECT count(*) FROM pet_interactions')->fetchColumn();
+
+    return $stats;
+}
+
+function deletePet($petId) {
+    global $pdo;
+    if (!$pdo) return false;
+
+    $stmt = $pdo->prepare("SELECT filename FROM pets WHERE id = ?");
+    $stmt->execute([$petId]);
+    $pet = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($pet) {
+        $filePath = __DIR__ . '/../uploads/' . $pet['filename'];
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
+
+        $deleteStmt = $pdo->prepare("DELETE FROM pets WHERE id = ?");
+        return $deleteStmt->execute([$petId]);
+    }
+
+    return false;
+}
+
+function getAllUsers() {
+    global $pdo;
+    if (!$pdo) return [];
+
+    $stmt = $pdo->query("SELECT id, email, name, created_at, last_login, is_admin FROM users ORDER BY created_at DESC");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getUserCryptoBalance($userId, $cryptoType) {
+    global $pdo;
+    
+    // In developer mode, return large balance for testing
+    if (defined('DEVELOPER_MODE') && DEVELOPER_MODE) {
+        return 1000.0; // Return 1000 units of any crypto for testing
+    }
+    
+    if (!$pdo) return 0.0;
+    $stmt = $pdo->prepare("SELECT balance FROM user_balances WHERE user_id = ? AND crypto_type = ?");
+    $stmt->execute([$userId, $cryptoType]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    return $result ? floatval($result['balance']) : 0.0;
+}
+
+// Messaging Functions
+
+function getOrCreateConversation($userOneId, $userTwoId) {
+    global $pdo;
+    if (!$pdo) return null;
+
+    // Ensure consistent ordering of user IDs to avoid duplicate conversations
+    $u1 = min($userOneId, $userTwoId);
+    $u2 = max($userOneId, $userTwoId);
+
+    $stmt = $pdo->prepare("SELECT id FROM conversations WHERE user_one_id = ? AND user_two_id = ?");
+    $stmt->execute([$u1, $u2]);
+    $conversation = $stmt->fetch();
+
+    if ($conversation) {
+        return $conversation['id'];
+    } else {
+        $stmt = $pdo->prepare("INSERT INTO conversations (user_one_id, user_two_id) VALUES (?, ?)");
+        $stmt->execute([$u1, $u2]);
+        return $pdo->lastInsertId();
+    }
+}
+
+function getConversationsForUser($userId) {
+    global $pdo;
+    if (!$pdo) return [];
+
+    $stmt = $pdo->prepare("
+        SELECT c.id, 
+               u.id as other_user_id, 
+               u.name as other_user_name, 
+               u.avatar as other_user_avatar,
+               (SELECT body FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
+               (SELECT created_at FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message_time,
+               (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND recipient_id = ? AND is_read = 0) as unread_count
+        FROM conversations c
+        JOIN users u ON u.id = IF(c.user_one_id = ?, c.user_two_id, c.user_one_id)
+        WHERE c.user_one_id = ? OR c.user_two_id = ?
+        ORDER BY last_message_time DESC
+    ");
+    $stmt->execute([$userId, $userId, $userId, $userId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getMessagesForConversation($conversationId, $userId) {
+    global $pdo;
+    if (!$pdo) return [];
+
+    // First, verify the user is part of this conversation
+    $verifyStmt = $pdo->prepare("SELECT id FROM conversations WHERE id = ? AND (user_one_id = ? OR user_two_id = ?)");
+    $verifyStmt->execute([$conversationId, $userId, $userId]);
+    if ($verifyStmt->fetchColumn() === false) {
+        // Instead of returning empty, redirect to a safe page like messages.php
+        // This provides better user feedback than a blank page.
+        redirectTo('messages.php');
+    }
+
+    // Mark messages as read for the current user
+    $updateStmt = $pdo->prepare("UPDATE messages SET is_read = 1 WHERE conversation_id = ? AND recipient_id = ? AND is_read = 0");
+    $updateStmt->execute([$conversationId, $userId]);
+
+    // Fetch all messages for the conversation
+    $stmt = $pdo->prepare("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC");
+    $stmt->execute([$conversationId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function sendMessage($conversationId, $senderId, $recipientId, $body) {
+    global $pdo;
+    if (!$pdo) return false;
+
+    // Verify the sender is part of this conversation
+    $verifyStmt = $pdo->prepare("SELECT id FROM conversations WHERE id = ? AND (user_one_id = ? OR user_two_id = ?)");
+    $verifyStmt->execute([$conversationId, $senderId, $senderId]);
+    if ($verifyStmt->fetchColumn() === false) {
+        return false; // Sender is not part of this conversation
+    }
+
+    $stmt = $pdo->prepare("INSERT INTO messages (conversation_id, sender_id, recipient_id, body) VALUES (?, ?, ?, ?)");
+    $success = $stmt->execute([$conversationId, $senderId, $recipientId, $body]);
+
+    if ($success) {
+        // Touch the conversation to update its updated_at timestamp
+        $updateStmt = $pdo->prepare("UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+        $updateStmt->execute([$conversationId]);
+
+        // Create a notification for the recipient
+        $senderName = getUserById($senderId)['name'] ?? 'Someone';
+        $notificationMessage = "You have a new message from " . $senderName . ".";
+        createNotification($recipientId, $senderId, 'new_message', $notificationMessage, 'conversation.php?id=' . $conversationId);
+    }
+
+    return $success;
+}
+
+
+// Utility functions
+function sanitizeInput($input) {
+    return htmlspecialchars(strip_tags(trim($input)));
+}
+
+function generateRandomString($length = 32) {
+    return bin2hex(random_bytes($length / 2));
+}
+
+function isValidEmail($email) {
+    return filter_var($email, FILTER_VALIDATE_EMAIL);
+}
+
+function redirectTo($url) {
+    header("Location: $url");
+    exit;
+}
+
+function getAdoptablePets() {
+    global $pdo;
+
+    $user_id = $_SESSION['user_id'] ?? 0;
+
+    $stmt = $pdo->prepare("
+        SELECT 
+            p.*, 
+            ps.hunger_level, 
+            ps.happiness_level, 
+            u.name as owner_name,
+            CASE 
+                WHEN p.is_for_sale = 1 THEN p.sale_price_usd
+                ELSE 
+                    CASE 
+                        WHEN p.id % 10 = 0 THEN 25.00
+                        WHEN p.id % 7 = 0 THEN 35.00
+                        WHEN p.id % 5 = 0 THEN 15.00
+                        WHEN p.id % 3 = 0 THEN 20.00
+                        ELSE 12.50
+                    END
+            END as adoption_fee,
+            CASE
+                WHEN p.is_for_sale = 1 THEN 'sale'
+                ELSE 'adoption'
+            END as listing_type
+        FROM pets p
+        LEFT JOIN pet_stats ps ON p.id = ps.pet_id
+        JOIN users u ON p.user_id = u.id
+        WHERE (p.is_public = 1 OR p.is_for_sale = 1)
+        AND p.user_id != ? 
+        ORDER BY p.is_for_sale DESC, RAND()
+        LIMIT 12
+    ");
+    $stmt->execute([$user_id]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function buyPet($buyerId, $petId, $salePrice, $cryptoType) {
+    global $pdo;
+
+    try {
+        $pdo->beginTransaction();
+
+        // 1. Get pet and seller details
+        $stmt = $pdo->prepare("SELECT * FROM pets WHERE id = ? AND is_for_sale = 1");
+        $stmt->execute([$petId]);
+        $pet = $stmt->fetch();
+
+        if (!$pet) {
+            throw new Exception('This pet is not available for sale.');
+        }
+
+        $sellerId = $pet['user_id'];
+        if ($sellerId == $buyerId) {
+            throw new Exception('You cannot buy your own pet.');
+        }
+
+        // 2. Check buyer's balance
+        $cryptoPrice = getCryptoPrice($cryptoType);
+        if ($cryptoPrice <= 0) {
+            throw new Exception('Could not retrieve a valid price for the selected cryptocurrency.');
+        }
+        $requiredCrypto = $salePrice / $cryptoPrice;
+        $buyerBalance = getUserCryptoBalance($buyerId, $cryptoType);
+
+        if ($buyerBalance < $requiredCrypto) {
+            throw new Exception('Insufficient funds to purchase this pet.');
+        }
+
+        // 3. Deduct from buyer
+        $stmt = $pdo->prepare("UPDATE user_balances SET balance = balance - ? WHERE user_id = ? AND crypto_type = ?");
+        $stmt->execute([$requiredCrypto, $buyerId, $cryptoType]);
+
+        // 4. Add to seller's balance
+        // First, ensure the seller has a balance record for this crypto type
+        $stmt = $pdo->prepare("INSERT INTO user_balances (user_id, crypto_type, balance) VALUES (?, ?, 0) ON DUPLICATE KEY UPDATE user_id=user_id");
+        $stmt->execute([$sellerId, $cryptoType]);
+        // Now, add the funds
+        $stmt = $pdo->prepare("UPDATE user_balances SET balance = balance + ? WHERE user_id = ? AND crypto_type = ?");
+        $stmt->execute([$requiredCrypto, $sellerId, $cryptoType]);
+
+        // 5. Transfer pet ownership and update sale status
+        $stmt = $pdo->prepare("UPDATE pets SET user_id = ?, is_for_sale = 0, sale_price_usd = NULL WHERE id = ?");
+        $stmt->execute([$buyerId, $petId]);
+
+        // 6. Record transactions for both buyer and seller
+        // Buyer's transaction
+        $stmt = $pdo->prepare("INSERT INTO crypto_transactions (user_id, transaction_type, crypto_type, crypto_amount, usd_amount, status, notes) VALUES (?, 'purchase', ?, ?, ?, 'confirmed', ?)");
+        $stmt->execute([$buyerId, $cryptoType, $requiredCrypto, $salePrice, 'Purchased pet ' . $pet['original_name']]);
+        
+        // Seller's transaction
+        $stmt = $pdo->prepare("INSERT INTO crypto_transactions (user_id, transaction_type, crypto_type, crypto_amount, usd_amount, status, notes) VALUES (?, 'sale', ?, ?, ?, 'confirmed', ?)");
+        $stmt->execute([$sellerId, $cryptoType, $requiredCrypto, $salePrice, 'Sold pet ' . $pet['original_name']]);
+
+        // 7. Create pet stats if they don't exist
+        $stmt = $pdo->prepare("INSERT IGNORE INTO pet_stats (pet_id, hunger_level, happiness_level) VALUES (?, 75, 85)");
+        $stmt->execute([$petId]);
+
+        $pdo->commit();
+
+        return [
+            'success' => true,
+            'pet' => $pet,
+            'message' => 'Congratulations! You have successfully purchased ' . htmlspecialchars($pet['original_name']) . '.'
+        ];
+
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        return [
+            'success' => false,
+            'message' => $e->getMessage()
+        ];
+    }
+}
+
+function adoptPet($userId, $petId, $adoptionFee, $cryptoType) {
+    global $pdo;
+    
+    try {
+        $pdo->beginTransaction();
+        
+        // Get pet details
+        $stmt = $pdo->prepare("SELECT * FROM pets WHERE id = ? AND user_id != ?");
+        $stmt->execute([$petId, $userId]);
+        $pet = $stmt->fetch();
+        
+        if (!$pet) {
+            throw new Exception('Pet not available for adoption');
+        }
+        
+        // Check user balance
+        $balance = getUserCryptoBalance($userId, $cryptoType);
+        $cryptoPrice = getCryptoPrice($cryptoType);
+        $requiredCrypto = $adoptionFee / $cryptoPrice;
+        
+        if ($balance < $requiredCrypto) {
+            throw new Exception('Insufficient balance for adoption fee');
+        }
+        
+        // Deduct adoption fee
+        $stmt = $pdo->prepare("
+            UPDATE user_balances 
+            SET balance = balance - ? 
+            WHERE user_id = ? AND crypto_type = ?
+        ");
+        $stmt->execute([$requiredCrypto, $userId, $cryptoType]);
+        
+        // Transfer pet ownership
+        $stmt = $pdo->prepare("UPDATE pets SET user_id = ? WHERE id = ?");
+        $stmt->execute([$userId, $petId]);
+        
+        // Record transaction
+        $stmt = $pdo->prepare("
+            INSERT INTO crypto_transactions 
+            (user_id, transaction_type, crypto_type, crypto_amount, usd_amount, status) 
+            VALUES (?, 'adoption', ?, ?, ?, 'confirmed')
+        ");
+        $stmt->execute([$userId, $cryptoType, $requiredCrypto, $adoptionFee]);
+        
+        // Create pet stats if they don't exist
+        $stmt = $pdo->prepare("
+            INSERT IGNORE INTO pet_stats (pet_id, hunger_level, happiness_level) 
+            VALUES (?, 75, 85)
+        ");
+        $stmt->execute([$petId]);
+        
+        $pdo->commit();
+        
+        return [
+            'success' => true,
+            'pet' => $pet,
+            'crypto_amount' => $requiredCrypto,
+            'message' => 'Pet adopted successfully!'
+        ];
+        
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        return [
+            'success' => false,
+            'message' => $e->getMessage()
+        ];
+    }
+}
+?>

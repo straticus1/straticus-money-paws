@@ -1,0 +1,109 @@
+# Money Paws - Git Ignore File
+
+# Configuration files with sensitive data
+config/database.php
+.env
+.env.local
+.env.production
+
+# Uploaded files and user content
+uploads/*
+!uploads/.gitkeep
+uploads/pets/*
+!uploads/pets/.gitkeep
+uploads/ai-generated/*
+!uploads/ai-generated/.gitkeep
+uploads/temp/*
+!uploads/temp/.gitkeep
+
+# Composer dependencies
+vendor/
+composer.lock
+
+# Node.js dependencies (desktop app)
+gui/desktop/node_modules/
+gui/desktop/dist/
+gui/web/node_modules/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+*.tmp
+*.temp
+*.log
+
+# Database files (local development)
+*.sqlite
+*.db
+database/paws_money_testing.sqlite
+
+# CLI configuration and session files
+cli/config.json
+cli/session.json
+
+# Terraform generated files (if using infrastructure as code)
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Cache files
+cache/
+tmp/
+temp/
+
+# Build artifacts
+gui/desktop/out/
+gui/desktop/build/
+
+# Package files
+*.zip
+*.tar.gz
+*.rar
+
+# Security and sensitive files
+private_keys/
+certificates/
+ssl/
+
+# Development and testing
+phpunit.xml
+.phpunit.result.cache
+tests/_output/
+tests/_support/_generated
+
+# Docker (if using)
+docker-compose.override.yml
+.docker/
+
+# Local environment files
+.env.development
+.env.staging
+.env.testing
+
+# Generated documentation
+docs/api/generated/
+docs/build/
+
+# Electron build artifacts
+gui/desktop/dist/
+gui/desktop/out/

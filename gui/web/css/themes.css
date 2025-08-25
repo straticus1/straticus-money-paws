@@ -1,0 +1,341 @@
+/* Money Paws Web GUI - Theme Styles
+ * Developed and Designed by Ryan Coleman. <coleman.ryan@gmail.com>
+ */
+
+/* Theme Toggle Animation */
+.theme-transition {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Dark Theme Overrides */
+.theme-dark {
+    --primary-color: #7c3aed;
+    --primary-dark: #6d28d9;
+    --secondary-color: #8b5cf6;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    --info-color: #3b82f6;
+    
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    
+    --border-color: #334155;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* High Contrast Theme */
+.theme-high-contrast {
+    --primary-color: #0066cc;
+    --primary-dark: #004499;
+    --secondary-color: #6600cc;
+    --success-color: #008800;
+    --warning-color: #cc6600;
+    --error-color: #cc0000;
+    --info-color: #0088cc;
+    
+    --bg-primary: #ffffff;
+    --bg-secondary: #f0f0f0;
+    --bg-tertiary: #e0e0e0;
+    --text-primary: #000000;
+    --text-secondary: #333333;
+    --text-muted: #666666;
+    
+    --border-color: #000000;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+.theme-high-contrast.theme-dark {
+    --bg-primary: #000000;
+    --bg-secondary: #1a1a1a;
+    --bg-tertiary: #333333;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --text-muted: #999999;
+    --border-color: #ffffff;
+}
+
+/* Large Text Theme */
+.theme-large-text {
+    font-size: 1.125rem;
+}
+
+.theme-large-text h1 { font-size: 2.5rem; }
+.theme-large-text h2 { font-size: 2.25rem; }
+.theme-large-text h3 { font-size: 2rem; }
+.theme-large-text h4 { font-size: 1.75rem; }
+.theme-large-text .btn { font-size: 1.125rem; padding: 14px 28px; }
+.theme-large-text .nav-item { font-size: 1.125rem; padding: 10px 18px; }
+
+/* Accessibility Theme Combinations */
+.theme-accessible {
+    --border-radius: 4px;
+    --border-radius-lg: 8px;
+}
+
+.theme-accessible .btn {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+.theme-accessible .nav-item {
+    min-height: 44px;
+}
+
+.theme-accessible input,
+.theme-accessible select {
+    min-height: 44px;
+}
+
+/* Color Blind Friendly Palette */
+.theme-colorblind-friendly {
+    --primary-color: #1f77b4;
+    --secondary-color: #ff7f0e;
+    --success-color: #2ca02c;
+    --warning-color: #d62728;
+    --error-color: #9467bd;
+    --info-color: #17becf;
+}
+
+/* Reduced Motion Theme */
+.theme-reduced-motion * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+}
+
+/* Print Styles */
+@media print {
+    .navbar,
+    .nav-actions,
+    .btn,
+    .game-animation {
+        display: none !important;
+    }
+    
+    .main-content {
+        padding: 0;
+        max-width: none;
+    }
+    
+    .card {
+        border: 1px solid #000;
+        box-shadow: none;
+        page-break-inside: avoid;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+    }
+}
+
+/* Theme Toggle Button Styles */
+.theme-toggle {
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-toggle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.theme-toggle:hover::before {
+    width: 100px;
+    height: 100px;
+}
+
+/* Custom Scrollbar for Dark Theme */
+.theme-dark ::-webkit-scrollbar {
+    width: 8px;
+}
+
+.theme-dark ::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+.theme-dark ::-webkit-scrollbar-thumb {
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+.theme-dark ::-webkit-scrollbar-thumb:hover {
+    background: var(--border-color);
+}
+
+/* Focus Indicators for Different Themes */
+.theme-high-contrast button:focus,
+.theme-high-contrast input:focus,
+.theme-high-contrast select:focus {
+    outline: 3px solid #0066cc;
+    outline-offset: 2px;
+}
+
+.theme-dark button:focus,
+.theme-dark input:focus,
+.theme-dark select:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.2);
+}
+
+/* Selection Colors */
+.theme-dark ::selection {
+    background: var(--primary-color);
+    color: white;
+}
+
+.theme-high-contrast ::selection {
+    background: #0066cc;
+    color: white;
+}
+
+/* Error and Success State Themes */
+.theme-dark .notification.success {
+    background: var(--success-color);
+    border: 1px solid #065f46;
+}
+
+.theme-dark .notification.error {
+    background: var(--error-color);
+    border: 1px solid #7f1d1d;
+}
+
+.theme-high-contrast .notification {
+    border: 2px solid currentColor;
+    font-weight: bold;
+}
+
+/* Loading Animation Themes */
+.theme-dark .loading-spinner {
+    border-color: rgba(255, 255, 255, 0.2);
+    border-top-color: var(--primary-color);
+}
+
+.theme-high-contrast .loading-spinner {
+    border-width: 3px;
+    border-color: #cccccc;
+    border-top-color: var(--primary-color);
+}
+
+/* Card Hover Effects by Theme */
+.theme-dark .card:hover {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: var(--primary-color);
+}
+
+.theme-high-contrast .card:hover {
+    border-width: 2px;
+    border-color: var(--primary-color);
+}
+
+/* Button Hover Effects by Theme */
+.theme-dark .btn-primary:hover {
+    background: var(--primary-dark);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.theme-high-contrast .btn:hover {
+    border-width: 2px;
+    font-weight: bold;
+}
+
+/* Game Animation Themes */
+.theme-dark .game-animation {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+}
+
+.theme-high-contrast .game-animation {
+    border: 2px solid var(--border-color);
+}
+
+/* Chart Themes */
+.theme-dark .chart-card canvas {
+    filter: brightness(0.9);
+}
+
+.theme-high-contrast .chart-card canvas {
+    filter: contrast(1.2);
+}
+
+/* Mobile Theme Adjustments */
+@media (max-width: 768px) {
+    .theme-large-text {
+        font-size: 1rem;
+    }
+    
+    .theme-large-text h1 { font-size: 2rem; }
+    .theme-large-text h2 { font-size: 1.75rem; }
+    .theme-large-text h3 { font-size: 1.5rem; }
+    
+    .theme-accessible .btn {
+        min-height: 48px;
+        padding: 12px 20px;
+    }
+}
+
+/* Preference-based theme detection */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --auto-bg-primary: #0f172a;
+        --auto-text-primary: #f1f5f9;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --auto-bg-primary: #ffffff;
+        --auto-text-primary: #2d3748;
+    }
+}
+
+@media (prefers-contrast: high) {
+    .card {
+        border-width: 2px;
+    }
+    
+    .btn {
+        border-width: 2px;
+        border-style: solid;
+    }
+    
+    .btn-primary {
+        border-color: var(--primary-dark);
+    }
+    
+    .btn-secondary {
+        border-color: var(--text-primary);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .loading-spinner {
+        animation: none;
+    }
+    
+    .coin.flipping {
+        animation: none;
+    }
+    
+    .theme-toggle::before {
+        transition: none;
+    }
+}

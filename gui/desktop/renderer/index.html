@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Paws Desktop</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/themes.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-logo">🐾💰</div>
+            <div class="loading-text">Loading Money Paws...</div>
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+
+    <!-- Notifications Container -->
+    <div id="notifications" class="notifications-container"></div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="app-logo">🐾💰</div>
+                <h1>Money Paws Desktop</h1>
+                <p>Cryptocurrency-powered pet platform</p>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="tab-btn active" data-tab="login">Login</button>
+                <button class="tab-btn" data-tab="register">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form active">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="auth-form">
+                <div class="form-group">
+                    <label for="register-name">Full Name</label>
+                    <input type="text" id="register-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="register-confirm">Confirm Password</label>
+                    <input type="password" id="register-confirm" required minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary">Register</button>
+            </form>
+
+            <!-- OAuth Options -->
+            <div class="oauth-section">
+                <div class="oauth-divider">
+                    <span>or continue with</span>
+                </div>
+                <div class="oauth-buttons">
+                    <button class="btn btn-oauth" data-provider="google">
+                        <span class="oauth-icon">🔍</span> Google
+                    </button>
+                    <button class="btn btn-oauth" data-provider="facebook">
+                        <span class="oauth-icon">📘</span> Facebook
+                    </button>
+                    <button class="btn btn-oauth" data-provider="apple">
+                        <span class="oauth-icon">🍎</span> Apple
+                    </button>
+                    <button class="btn btn-oauth" data-provider="twitter">
+                        <span class="oauth-icon">🐦</span> Twitter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="app-screen" class="screen">
+        <!-- Navigation -->
+        <nav class="sidebar">
+            <div class="nav-header">
+                <div class="nav-logo">🐾💰</div>
+                <div class="nav-title">Money Paws</div>
+            </div>
+            
+            <div class="nav-menu">
+                <a href="#" class="nav-item active" data-view="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-view="gaming">
+                    <span class="nav-icon">🎮</span>
+                    <span class="nav-text">Gaming</span>
+                </a>
+                <a href="#" class="nav-item" data-view="balances">
+                    <span class="nav-icon">💰</span>
+                    <span class="nav-text">Balances</span>
+                </a>
+                <a href="#" class="nav-item" data-view="profile">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-text">Profile</span>
+                </a>
+                <a href="#" class="nav-item" data-view="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">Settings</span>
+                </a>
+            </div>
+
+            <div class="nav-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="profile-avatar">R</div>
+                    <div class="user-details">
+                        <div class="user-name" id="user-name">Ryan Coleman</div>
+                        <div class="user-status">Online</div>
+                    </div>
+                </div>
+                <button id="logout-btn" class="btn btn-secondary btn-sm">Logout</button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="content-header">
+                <div class="header-left">
+                    <h1 id="page-title">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <button id="refresh-btn" class="btn btn-icon" title="Refresh Data">
+                        🔄
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="view active">
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Portfolio Value</h3>
+                            <span class="card-icon">💎</span>
+                        </div>
+                        <div class="card-content">
+                            <div class="stat-value" id="total-value">$0.00</div>
+                            <div class="stat-change positive">+2.5%</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Active Cryptos</h3>
+                            <span class="card-icon">🪙</span>
+                        </div>
+                        <div class="card-content">
+                            <div class="stat-value" id="crypto-count">0</div>
+                            <div class="stat-label">currencies</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Games Played</h3>
+                            <span class="card-icon">🎯</span>
+                        </div>
+                        <div class="card-content">
+                            <div class="stat-value" id="games-played">0</div>
+                            <div class="stat-label">this week</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Win Rate</h3>
+                            <span class="card-icon">🏆</span>
+                        </div>
+                        <div class="card-content">
+                            <div class="stat-value" id="win-rate">0%</div>
+                            <div class="stat-label">last 30 days</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-content">
+                    <div class="content-section">
+                        <h3>Recent Activity</h3>
+                        <div id="recent-activity" class="activity-list">
+                            <!-- Activity items will be populated here -->
+                        </div>
+                    </div>
+
+                    <div class="content-section">
+                        <h3>Quick Actions</h3>
+                        <div class="quick-actions">
+                            <button class="action-btn" data-action="play-game">
+                                <span class="action-icon">🎮</span>
+                                <span class="action-text">Play Game</span>
+                            </button>
+                            <button class="action-btn" data-action="view-balances">
+                                <span class="action-icon">💰</span>
+                                <span class="action-text">View Balances</span>
+                            </button>
+                            <button class="action-btn" data-action="deposit">
+                                <span class="action-icon">📥</span>
+                                <span class="action-text">Deposit</span>
+                            </button>
+                            <button class="action-btn" data-action="withdraw">
+                                <span class="action-icon">📤</span>
+                                <span class="action-text">Withdraw</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gaming View -->
+            <div id="gaming-view" class="view">
+                <div class="gaming-container">
+                    <div class="game-selection">
+                        <h3>Select Game</h3>
+                        <div class="game-grid">
+                            <div class="game-card active" data-game="coinflip">
+                                <div class="game-icon">🪙</div>
+                                <div class="game-title">Coin Flip</div>
+                                <div class="game-description">50/50 chance to double your bet</div>
+                            </div>
+                            <div class="game-card disabled" data-game="dice">
+                                <div class="game-icon">🎲</div>
+                                <div class="game-title">Dice Roll</div>
+                                <div class="game-description">Coming Soon</div>
+                            </div>
+                            <div class="game-card disabled" data-game="slots">
+                                <div class="game-icon">🎰</div>
+                                <div class="game-title">Slots</div>
+                                <div class="game-description">Coming Soon</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="game-play">
+                        <!-- Coin Flip Game -->
+                        <div id="coinflip-game" class="game-content active">
+                            <div class="game-header">
+                                <h3>Coin Flip</h3>
+                                <p>Choose heads or tails and double your crypto!</p>
+                            </div>
+
+                            <div class="game-setup">
+                                <div class="setup-row">
+                                    <div class="setup-group">
+                                        <label for="game-crypto">Cryptocurrency</label>
+                                        <select id="game-crypto">
+                                            <option value="">Select crypto...</option>
+                                        </select>
+                                    </div>
+                                    <div class="setup-group">
+                                        <label for="bet-amount">Bet Amount</label>
+                                        <input type="number" id="bet-amount" step="0.00000001" min="0" placeholder="0.00">
+                                    </div>
+                                </div>
+                                <div class="balance-info">
+                                    Available: <span id="available-balance">0</span>
+                                </div>
+                            </div>
+
+                            <div class="game-choices">
+                                <button class="btn btn-choice" data-choice="heads">
+                                    <span class="choice-icon">👑</span>
+                                    <span class="choice-text">Heads</span>
+                                </button>
+                                <button class="btn btn-choice" data-choice="tails">
+                                    <span class="choice-icon">🦅</span>
+                                    <span class="choice-text">Tails</span>
+                                </button>
+                            </div>
+
+                            <div class="game-animation">
+                                <div id="coin" class="coin">🪙</div>
+                            </div>
+
+                            <div id="game-result" class="game-result"></div>
+
+                            <button id="play-game" class="btn btn-primary btn-lg" disabled>
+                                Play Game
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balances View -->
+            <div id="balances-view" class="view">
+                <div class="balances-header">
+                    <h3>Cryptocurrency Balances</h3>
+                    <button id="chart-toggle" class="btn btn-secondary">Show Chart</button>
+                </div>
+
+                <div id="balance-chart" class="chart-container" style="display: none;">
+                    <canvas id="balance-chart-canvas"></canvas>
+                </div>
+
+                <div id="balance-cards" class="balance-grid">
+                    <!-- Balance cards will be populated here -->
+                </div>
+            </div>
+
+            <!-- Profile View -->
+            <div id="profile-view" class="view">
+                <div class="profile-container">
+                    <div class="profile-header">
+                        <div class="profile-avatar-large" id="profile-avatar-large">R</div>
+                        <div class="profile-info">
+                            <h2 id="profile-name">Ryan Coleman</h2>
+                            <p id="profile-email">coleman.ryan@gmail.com</p>
+                            <span class="profile-badge" id="profile-provider">Local Account</span>
+                        </div>
+                    </div>
+
+                    <div class="profile-content">
+                        <div class="profile-section">
+                            <h3>Account Information</h3>
+                            <form id="profile-form">
+                                <div class="form-group">
+                                    <label for="profile-name-input">Full Name</label>
+                                    <input type="text" id="profile-name-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-email-input">Email</label>
+                                    <input type="email" id="profile-email-input" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Update Profile</button>
+                            </form>
+                        </div>
+
+                        <div class="profile-section">
+                            <h3>Account Stats</h3>
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <span class="stat-label">Member Since</span>
+                                    <span class="stat-value" id="profile-join-date">January 2024</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Total Games</span>
+                                    <span class="stat-value" id="profile-total-games">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Total Winnings</span>
+                                    <span class="stat-value" id="profile-total-winnings">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div id="settings-view" class="view">
+                <div class="settings-container">
+                    <h3>Application Settings</h3>
+                    
+                    <div class="settings-section">
+                        <h4>Appearance</h4>
+                        <div class="setting-item">
+                            <label for="theme-toggle">Dark Mode</label>
+                            <input type="checkbox" id="theme-toggle" class="toggle">
+                        </div>
+                        <div class="setting-item">
+                            <label for="animations-toggle">Enable Animations</label>
+                            <input type="checkbox" id="animations-toggle" class="toggle" checked>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Audio</h4>
+                        <div class="setting-item">
+                            <label for="sound-toggle">Sound Effects</label>
+                            <input type="checkbox" id="sound-toggle" class="toggle" checked>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Application</h4>
+                        <div class="setting-item">
+                            <label>Version</label>
+                            <span id="app-version">1.0.0</span>
+                        </div>
+                        <div class="setting-item">
+                            <button class="btn btn-secondary" id="check-updates">Check for Updates</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Data</h4>
+                        <div class="setting-item">
+                            <button class="btn btn-secondary" id="export-data">Export Data</button>
+                            <button class="btn btn-danger" id="clear-data">Clear Local Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/gaming.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
