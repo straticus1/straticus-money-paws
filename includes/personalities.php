@@ -1,5 +1,4 @@
 <?php
-require_once 'db.php';
 
 const DEFAULT_PERSONALITY_TRAITS = ['bravery', 'friendliness', 'curiosity', 'laziness', 'greed'];
 

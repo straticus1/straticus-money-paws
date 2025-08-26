@@ -10,6 +10,7 @@ if (session_status() == PHP_SESSION_NONE) {
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/pet_care.php';
 require_once __DIR__ . '/personalities.php';
+require_once __DIR__ . '/security.php';
 
 function get_db() {
     static $pdo = null;
@@ -984,4 +985,66 @@ function updatePetHappiness($pet_id, $happiness_change) {
     }
     
     return $stmt->execute([$happiness_change, $pet_id]);
+}
+
+/**
+ * Get CSRF token field for forms
+ */
+function getCSRFTokenField() {
+    $token = generate_csrf_token();
+    return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token) . '">';
+}
+
+/**
+ * Get pet by ID with error handling
+ */
+function getPetById($pet_id) {
+    $pdo = get_db();
+    
+    // Check demo accounts first (only in developer mode)
+    if (defined('DEVELOPER_MODE') && DEVELOPER_MODE && $pet_id < 100) {
+        // Return mock pet data for demo
+        return [
+            'id' => $pet_id,
+            'user_id' => 999999,
+            'original_name' => 'Demo Pet',
+            'name' => 'Demo Pet',
+            'description' => 'This is a demo pet for testing purposes.',
+            'filename' => 'demo-pet.jpg',
+            'gender' => 'Male',
+            'birth_date' => date('Y-m-d H:i:s', strtotime('-30 days')),
+            'life_status' => 'alive',
+            'is_memorial_enabled' => 0,
+            'donation_goal' => 0,
+            'donations_received' => 0,
+            'dna' => str_repeat('A', 50),
+            'is_public' => 1
+        ];
+    }
+    
+    $stmt = $pdo->prepare("SELECT * FROM pets WHERE id = ?");
+    $stmt->execute([$pet_id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Get donations for a pet memorial
+ */
+function getDonationsForPet($pet_id) {
+    $pdo = get_db();
+    
+    if (defined('DEVELOPER_MODE') && DEVELOPER_MODE) {
+        return []; // Return empty array in demo mode
+    }
+    
+    $stmt = $pdo->prepare("
+        SELECT pd.*, u.name as donor_name 
+        FROM pet_donations pd 
+        JOIN users u ON pd.donor_user_id = u.id 
+        WHERE pd.pet_id = ? 
+        ORDER BY pd.created_at DESC 
+        LIMIT 10
+    ");
+    $stmt->execute([$pet_id]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }

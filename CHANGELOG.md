@@ -6,7 +6,30 @@ All notable changes to Money Paws will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.1.0] - 2025-01-02 (LATEST)
+## [3.1.1] - 2025-01-02 (HOTFIX)
+
+### 🚑 CRITICAL HOTFIX: Missing Function Definitions
+
+**URGENT BUG FIX**: Resolved a critical issue that caused the entire site to fail loading due to missing function definitions in `includes/functions.php`.
+
+#### Fixed
+- **Missing CSRF Functions**: Added `getCSRFTokenField()` function that was referenced but not defined
+- **Missing Pet Functions**: Added `getPetById()` function with proper demo mode support
+- **Missing Donation Functions**: Added `getDonationsForPet()` function for memorial system
+- **Database Compatibility**: Enhanced all functions with SQLite/MySQL compatibility
+- **Error Handling**: Improved error handling and fallbacks for all new functions
+
+#### Impact
+- **Site Functionality Restored**: All pages now load correctly without fatal PHP errors
+- **Memorial System Working**: Pet memorial and donation features now fully functional
+- **Mating Requests Working**: Breeding request system operational
+- **CSRF Protection Active**: All forms properly protected with CSRF tokens
+
+**Users affected by site loading issues should pull this hotfix immediately.**
+
+---
+
+## [3.1.0] - 2025-01-02
 
 ### 💕 NEW FEATURES: Pet Memorial & Breeding Enhancement
 
