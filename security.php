@@ -147,7 +147,7 @@ include 'includes/header.php';
                     echo '<div class="text-center my-3"><img src="' . $qrCodeUrl . '" alt="QR Code"></div>';
                     ?>
                     
-                    <p><strong>Secret Key:</strong> <code><?php echo $_SESSION['totp_secret']; ?></code></p>
+                    <p><strong>Secret Key:</strong> <code><?php echo htmlspecialchars($_SESSION['totp_secret'], ENT_QUOTES, 'UTF-8'); ?></code></p>
 
                     <hr>
 

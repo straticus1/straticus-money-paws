@@ -8,6 +8,8 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/pet_care.php';
+require_once __DIR__ . '/personalities.php';
 
 function get_db() {
     static $pdo = null;
@@ -230,9 +232,12 @@ function getUserByName($name) {
 }
 
 function createUser($email, $password, $name, $provider = 'local') {
-        $pdo = get_db();
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-    $stmt = $pdo->prepare("INSERT INTO users (email, password, name, provider, created_at) VALUES (?, ?, ?, ?, NOW())");
+    $pdo = get_db();
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+    $db_type = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $now_function = $db_type == 'sqlite' ? "datetime('now')" : "NOW()";
+
+    $stmt = $pdo->prepare("INSERT INTO users (email, password, name, provider, created_at) VALUES (?, ?, ?, ?, $now_function)");
     return $stmt->execute([$email, $hashedPassword, $name, $provider]);
 }
 
@@ -249,8 +254,10 @@ function logoutUser() {
 
 // Pet functions
 function uploadPet($userId, $filename, $originalName, $description = '') {
-        $pdo = get_db();
-        $stmt = $pdo->prepare("INSERT INTO pets (user_id, filename, original_name, description, uploaded_at) VALUES (?, ?, ?, ?, NOW())");
+    $pdo = get_db();
+    $db_type = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $now_function = $db_type == 'sqlite' ? "datetime('now')" : "NOW()";
+    $stmt = $pdo->prepare("INSERT INTO pets (user_id, filename, original_name, description, uploaded_at) VALUES (?, ?, ?, ?, $now_function)");
     return $stmt->execute([$userId, $filename, $originalName, $description]);
 }
 
@@ -269,9 +276,22 @@ function getUserPets($userId) {
 }
 
 function getNotifications($userId) {
-        $pdo = get_db();
-    
-    $stmt = $pdo->prepare("SELECT n.*, s.username as sender_username, p.name as pet_name FROM notifications n JOIN users s ON n.sender_user_id = s.id LEFT JOIN pets p ON n.pet_id = p.id WHERE n.recipient_user_id = ? ORDER BY n.created_at DESC");
+    $pdo = get_db();
+
+    $stmt = $pdo->prepare("
+        SELECT 
+            n.*, 
+            s.username as sender_username, 
+            p.name as pet_name, 
+            mr.id as request_id, 
+            mr.status as request_status
+        FROM notifications n 
+        JOIN users s ON n.sender_user_id = s.id 
+        LEFT JOIN pets p ON n.pet_id = p.id
+        LEFT JOIN mating_requests mr ON n.request_id = mr.id
+        WHERE n.recipient_user_id = ? 
+        ORDER BY n.created_at DESC
+    ");
     $stmt->execute([$userId]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -299,18 +319,19 @@ function markNotificationsAsRead($userId) {
     return $stmt->execute([$userId]);
 }
 
-function createNotification($recipient_user_id, $sender_user_id, $pet_id, $interaction_id, $notification_type) {
-        $pdo = get_db();
-    
+function createNotification($recipient_user_id, $sender_user_id, $pet_id, $notification_type, $interaction_id = null, $request_id = null) {
+    $pdo = get_db();
+
     // Don't create a notification if the user is interacting with their own pet
-    if ($recipient_user_id == $sender_user_id) {
+    // and it's not a system message like a mating request response.
+    if ($recipient_user_id == $sender_user_id && $notification_type !== 'mating_response') {
         return false;
     }
 
     $stmt = $pdo->prepare(
-        "INSERT INTO notifications (recipient_user_id, sender_user_id, pet_id, interaction_id, notification_type) VALUES (?, ?, ?, ?, ?)"
+        'INSERT INTO notifications (recipient_user_id, sender_user_id, pet_id, notification_type, interaction_id, request_id) VALUES (?, ?, ?, ?, ?, ?)'
     );
-    return $stmt->execute([$recipient_user_id, $sender_user_id, $pet_id, $interaction_id, $notification_type]);
+    return $stmt->execute([$recipient_user_id, $sender_user_id, $pet_id, $notification_type, $interaction_id, $request_id]);
 }
 
 function time_ago($datetime, $full = false) {
@@ -408,21 +429,49 @@ function getPetByIdAndOwner($petId, $userId) {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
+function getDonationsForPet($pet_id) {
+    $pdo = get_db();
+    $stmt = $pdo->prepare('SELECT d.*, u.name as donor_name FROM pet_donations d JOIN users u ON d.donor_user_id = u.id WHERE d.pet_id = ? ORDER BY d.created_at DESC');
+    $stmt->execute([$pet_id]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 function getBreedingCooldown($petId) {
     $pdo = get_db();
-    $stmt = $pdo->prepare("SELECT * FROM breeding_cooldowns WHERE pet_id = ? AND cooldown_expires > NOW()");
+    $db_type = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $now_function = $db_type == 'sqlite' ? "datetime('now')" : "NOW()";
+
+    $stmt = $pdo->prepare("SELECT * FROM breeding_cooldowns WHERE pet_id = ? AND cooldown_expires > $now_function");
     $stmt->execute([$petId]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 function setBreedingCooldown($petId, $cooldownSeconds) {
     $pdo = get_db();
-    $stmt = $pdo->prepare("INSERT INTO breeding_cooldowns (pet_id, cooldown_expires) VALUES (?, DATE_ADD(NOW(), INTERVAL ? SECOND)) ON DUPLICATE KEY UPDATE cooldown_expires = DATE_ADD(NOW(), INTERVAL ? SECOND)");
+    $db_type = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+
+    if ($db_type == 'sqlite') {
+        $stmt = $pdo->prepare("
+            INSERT INTO breeding_cooldowns (pet_id, cooldown_expires) 
+            VALUES (?, datetime('now', '+' || ? || ' seconds'))
+            ON CONFLICT(pet_id) DO UPDATE SET cooldown_expires = datetime('now', '+' || ? || ' seconds');
+        ");
+    } else { // MySQL
+        $stmt = $pdo->prepare("
+            INSERT INTO breeding_cooldowns (pet_id, cooldown_expires) 
+            VALUES (?, DATE_ADD(NOW(), INTERVAL ? SECOND)) 
+            ON DUPLICATE KEY UPDATE cooldown_expires = DATE_ADD(NOW(), INTERVAL ? SECOND);
+        ");
+    }
+    
     return $stmt->execute([$petId, $cooldownSeconds, $cooldownSeconds]);
 }
 
 function createBredPet($userId, $name, $dna, $motherId, $fatherId) {
     $pdo = get_db();
+    $db_type = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $now_function = $db_type == 'sqlite' ? "datetime('now')" : "NOW()";
+
     // A default filename or image needs to be decided for bred pets.
     // For now, let's use a placeholder.
     $filename = 'bred_pet_placeholder.png';
@@ -430,7 +479,7 @@ function createBredPet($userId, $name, $dna, $motherId, $fatherId) {
     $description = 'A newly bred pet.';
 
     $stmt = $pdo->prepare(
-        "INSERT INTO pets (user_id, name, original_name, description, filename, dna, mother_id, father_id, uploaded_at, is_public) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 1)"
+        "INSERT INTO pets (user_id, name, original_name, description, filename, dna, mother_id, father_id, uploaded_at, is_public, birth_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, $now_function, 1, $now_function)"
     );
     $stmt->execute([$userId, $name, $original_name, $description, $filename, $dna, $motherId, $fatherId]);
     return $pdo->lastInsertId();
@@ -444,14 +493,16 @@ function getPublicUserPets($userId) {
 }
 
 function setVacationMode($userId, $delegateId, $reservedFunds) {
-        $pdo = get_db();
-    
+    $pdo = get_db();
+    $db_type = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $now_function = $db_type == 'sqlite' ? "datetime('now')" : "NOW()";
+
     $stmt = $pdo->prepare("
         UPDATE users 
         SET is_on_vacation = 1, 
             vacation_delegate_id = ?, 
             vacation_reserved_funds = ?, 
-            vacation_start_date = NOW()
+            vacation_start_date = $now_function
         WHERE id = ?
     ");
     return $stmt->execute([$delegateId, $reservedFunds, $userId]);
@@ -474,14 +525,16 @@ function disableVacationMode($userId) {
 }
 
 function getAbandonedPets($limit = 12, $offset = 0) {
-        $pdo = get_db();
-    
+    $pdo = get_db();
+    $db_type = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $date_function = $db_type == 'sqlite' ? "datetime('now', '-30 days')" : "DATE_SUB(NOW(), INTERVAL 30 DAY)";
+
     $stmt = $pdo->prepare("
         SELECT p.*, u.name as owner_name, ps.last_cared_for
         FROM pets p
         JOIN users u ON p.user_id = u.id
         JOIN pet_stats ps ON p.id = ps.pet_id
-        WHERE ps.last_cared_for < DATE_SUB(NOW(), INTERVAL 30 DAY)
+        WHERE ps.last_cared_for < $date_function
         ORDER BY ps.last_cared_for ASC
         LIMIT ? OFFSET ?
     ");
@@ -720,7 +773,7 @@ function getAdoptablePets() {
         JOIN users u ON p.user_id = u.id
         WHERE (p.is_public = 1 OR p.is_for_sale = 1)
         AND p.user_id != ? 
-        ORDER BY p.is_for_sale DESC, RAND()
+        ORDER BY p.is_for_sale DESC, RANDOM()
         LIMIT 12
     ");
     $stmt->execute([$user_id]);
@@ -728,7 +781,7 @@ function getAdoptablePets() {
 }
 
 function buyPet($buyerId, $petId, $salePrice, $cryptoType) {
-        $pdo = get_db();
+    $pdo = get_db();
 
     try {
         $pdo->beginTransaction();
@@ -765,7 +818,12 @@ function buyPet($buyerId, $petId, $salePrice, $cryptoType) {
 
         // 4. Add to seller's balance
         // First, ensure the seller has a balance record for this crypto type
-        $stmt = $pdo->prepare("INSERT INTO user_balances (user_id, crypto_type, balance) VALUES (?, ?, 0) ON DUPLICATE KEY UPDATE user_id=user_id");
+        $db_type = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($db_type == 'sqlite') {
+            $stmt = $pdo->prepare("INSERT OR IGNORE INTO user_balances (user_id, crypto_type, balance) VALUES (?, ?, 0)");
+        } else {
+            $stmt = $pdo->prepare("INSERT INTO user_balances (user_id, crypto_type, balance) VALUES (?, ?, 0) ON DUPLICATE KEY UPDATE user_id=user_id");
+        }
         $stmt->execute([$sellerId, $cryptoType]);
         // Now, add the funds
         $stmt = $pdo->prepare("UPDATE user_balances SET balance = balance + ? WHERE user_id = ? AND crypto_type = ?");
@@ -783,10 +841,6 @@ function buyPet($buyerId, $petId, $salePrice, $cryptoType) {
         // Seller's transaction
         $stmt = $pdo->prepare("INSERT INTO crypto_transactions (user_id, transaction_type, crypto_type, crypto_amount, usd_amount, status, notes) VALUES (?, 'sale', ?, ?, ?, 'confirmed', ?)");
         $stmt->execute([$sellerId, $cryptoType, $requiredCrypto, $salePrice, 'Sold pet ' . $pet['original_name']]);
-
-        // 7. Create pet stats if they don't exist
-        $stmt = $pdo->prepare("INSERT IGNORE INTO pet_stats (pet_id, hunger_level, happiness_level) VALUES (?, 75, 85)");
-        $stmt->execute([$petId]);
 
         $pdo->commit();
 
@@ -873,4 +927,61 @@ function adoptPet($userId, $petId, $adoptionFee, $cryptoType) {
         ];
     }
 }
-?>
+/**
+ * Calculates a pet's age in "pet days", where one pet day is 12 real-world hours.
+ *
+ * @param string $birth_date The pet's birth date in a format compatible with DateTime.
+ * @return int The pet's age in pet days.
+ */
+function getPetAgeInPetDays($birth_date) {
+    if (empty($birth_date)) {
+        return 0;
+    }
+    try {
+        $birth = new DateTime($birth_date);
+        $now = new DateTime();
+        $diff_hours = ($now->getTimestamp() - $birth->getTimestamp()) / 3600;
+        return floor($diff_hours / 12); // 1 pet day = 12 real hours
+    } catch (Exception $e) {
+        // You might want to log this error
+        return 0; // Return 0 if date is invalid
+    }
+}
+
+/**
+ * Updates a pet's happiness level, ensuring it stays between 0 and 100.
+ *
+ * @param int $pet_id The pet's ID.
+ * @param int $happiness_change The amount to change happiness by (can be negative).
+ * @return bool True on success, false on failure.
+ */
+function generate_csrf_token() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function validate_csrf_token($token) {
+    if (isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token)) {
+        // Token is valid, unset it to prevent reuse
+        unset($_SESSION['csrf_token']);
+        return true;
+    }
+    return false;
+}
+
+function updatePetHappiness($pet_id, $happiness_change) {
+    $pdo = get_db();
+    $db_type = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+
+    if ($db_type == 'sqlite') {
+        // SQLite doesn't have GREATEST/LEAST, so use MIN/MAX
+        $stmt = $pdo->prepare("UPDATE pet_stats SET happiness_level = MAX(0, MIN(100, happiness_level + ?)) WHERE pet_id = ?");
+    } else {
+        // MySQL can use GREATEST/LEAST
+        $stmt = $pdo->prepare("UPDATE pet_stats SET happiness_level = GREATEST(0, LEAST(100, happiness_level + ?)) WHERE pet_id = ?");
+    }
+    
+    return $stmt->execute([$happiness_change, $pet_id]);
+}

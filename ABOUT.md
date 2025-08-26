@@ -3,9 +3,9 @@
 
 ## The Story Behind Money Paws
 
-In a world where cryptocurrency and digital assets are rapidly transforming how we think about value and ownership, there emerged a unique vision: **What if we could combine the joy of pets with the excitement of crypto gaming?**
+In a world where cryptocurrency and digital assets are rapidly transforming how we think about value and ownership, a unique vision emerged: **What if we could combine the joy of pets with the excitement of crypto gaming?**
 
-Money Paws was born from this simple yet powerful idea - creating a platform where the universal love for our furry, feathered, and scaled companions meets the cutting-edge world of blockchain technology.
+Money Paws was born from this simple yet powerful idea—creating a platform where the universal love for our furry, feathered, and scaled companions meets the cutting-edge world of blockchain technology.
 
 ### 🌟 The Vision
 
@@ -55,7 +55,7 @@ The platform features a **dedicated CLI (Command Line Interface)** specifically 
 
 #### Why Accessibility Matters
 
-The creator of Money Paws, **Ryan Coleman**, is himself a **visually impaired jack-of-all-trades super cat** 🐱 who understands firsthand the challenges faced by the blind and low-vision community in accessing modern technology platforms.
+The creator of Money Paws, **Ryan Coleman**, is himself a **visually impaired developer and accessibility advocate** 🐱 who understands firsthand the challenges faced by the blind and low-vision community in accessing modern technology platforms.
 
 This personal connection drives the platform's **accessibility-first approach**:
 
@@ -65,7 +65,7 @@ This personal connection drives the platform's **accessibility-first approach**:
 - **100% keyboard navigation** - no mouse required
 - **Clear, descriptive announcements** for all interface elements
 
-The CLI client is provided **completely free** to accessibility users, ensuring that visual impairments never prevent anyone from enjoying the full Money Paws experience.
+The CLI client is provided **completely free** to users who rely on accessibility features, ensuring that visual impairments never prevent anyone from enjoying the full Money Paws experience.
 
 ### 🌍 Community & Social Impact
 

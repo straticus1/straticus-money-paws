@@ -6,9 +6,12 @@
 
 header('Content-Type: application/json');
 require_once '../includes/functions.php';
+require_once '../includes/security.php';
 require_once '../includes/genetics.php';
 require_once '../includes/personalities.php';
 require_once '../includes/health.php';
+
+requireCSRFToken();
 
 if (!isLoggedIn()) {
     echo json_encode(['success' => false, 'message' => 'You must be logged in to breed pets.']);
@@ -36,6 +39,21 @@ $father = getPetByIdAndOwner($father_id, $user_id);
 
 if (!$mother || !$father) {
     echo json_encode(['success' => false, 'message' => 'You do not own one or both of the selected pets.']);
+    exit;
+}
+
+// Check pet ages
+$mother_age = getPetAgeInPetDays($mother['birth_date']);
+$father_age = getPetAgeInPetDays($father['birth_date']);
+$minimum_age = 18;
+
+if ($mother_age < $minimum_age) {
+    echo json_encode(['success' => false, 'message' => 'The mother is too young to breed. It must be at least ' . $minimum_age . ' pet days old.']);
+    exit;
+}
+
+if ($father_age < $minimum_age) {
+    echo json_encode(['success' => false, 'message' => 'The father is too young to breed. It must be at least ' . $minimum_age . ' pet days old.']);
     exit;
 }
 
@@ -85,6 +103,10 @@ if ($new_pet_id) {
 
     // Initialize health stats
     initializePetHealth($new_pet_id);
+
+    // Increase happiness of parents
+    updatePetHappiness($mother_id, 20); // +20 happiness
+    updatePetHappiness($father_id, 20); // +20 happiness
 
     echo json_encode(['success' => true, 'message' => 'Congratulations! You have a new pet!', 'new_pet_id' => $new_pet_id]);
 } else {

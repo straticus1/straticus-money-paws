@@ -2,7 +2,7 @@ Money Paws - Technical Documentation
 ====================================
 
 Developer: Ryan Coleman <coleman.ryan@gmail.com>
-Version: 2.0.0
+Version: 3.0.0+
 
 ## 1. Project Overview
 
@@ -19,7 +19,7 @@ Money Paws is a web-based platform that combines a social pet gallery with crypt
 
 - **Authentication**: Standard email/password registration with bcrypt hashing. OAuth2 integration for Google, Facebook, Apple, and Twitter/X with secure state validation.
 
-- **Cryptocurrency**: Utilizes the Coinbase Commerce API for handling payments and deposits in BTC, ETH, USDC, SOL, and XRP. Real-time price data is fetched from external APIs with fallback mechanisms.
+- **Cryptocurrency**: Utilizes the Coinbase Commerce API for handling payments and deposits in BTC, ETH, USDC, SOL, and XRP. Real-time price data is fetched from CoinGecko API with fallback mechanisms.
 
 - **Pet Management**: Users can upload pet images with secure file validation. Pet stats (hunger, happiness) are managed with time-based degradation. Includes privacy controls and cross-user interactions.
 
@@ -35,12 +35,19 @@ Money Paws is a web-based platform that combines a social pet gallery with crypt
 
 - **Abandoned Pet Adoption**: Community rescue system automatically detecting pets uncared for 30+ days, enabling adoption with transfer of ownership.
 
+- **Pet Breeding & Genetics**: Advanced genetic inheritance system with DNA manipulation, breeding requests, and genetic mutations creating unique offspring.
+
+- **Mating Request System**: Secure peer-to-peer breeding requests between compatible pets with age verification, gender validation, and cooldown management.
+
+- **Pet Memorial & Donations**: Comprehensive memorial system for deceased pets with community donation support, goal tracking, and tribute messages.
+
 - **Enhanced Security**: 
-  - Multi-method Two-Factor Authentication (email + TOTP)
+  - Multi-method Two-Factor Authentication (email + TOTP + SMS)
   - Comprehensive security event logging
   - Withdrawal verification with mandatory 2FA
   - Advanced CSRF protection
   - Session security with regeneration
+  - Production-ready SMS integration with Twilio
 
 - **Multi-Platform Architecture**: 
   - Responsive web application with PWA capabilities
@@ -54,6 +61,7 @@ Money Paws is a web-based platform that combines a social pet gallery with crypt
   - Cross-user pet interactions
   - Community-driven content moderation
   - User activity analytics
+  - Memorial and donation systems for community support
 
 ## 4. Project Structure
 
@@ -80,9 +88,20 @@ Money Paws is a web-based platform that combines a social pet gallery with crypt
 
 Refer to `INSTALL.md` for detailed instructions. The platform can be installed via an automated shell script (`install.sh`) or manually. A web-based installer (`install.php`) is used for final configuration.
 
-## 7. Future Development
+## 7. Recent Major Updates (v3.0.0+)
 
-- Mobile application development.
-- NFT marketplace integration.
-- Advanced AI features, including pet breeding.
-- Expanded social and community features.
+- **Pet Memorial System**: Complete memorial and donation framework for deceased pets
+- **Mating Request System**: Peer-to-peer breeding requests with genetic inheritance
+- **Live Cryptocurrency Pricing**: Production-ready CoinGecko API integration
+- **SMS 2FA Integration**: Twilio-powered SMS verification for enhanced security
+- **Enhanced Pet Detail Pages**: Comprehensive pet information with memorial and mating features
+- **Database Schema Expansion**: New tables for donations, mating requests, and enhanced pet attributes
+
+## 8. Future Development
+
+- Mobile application development
+- NFT marketplace integration
+- Advanced AI features expansion
+- Expanded social and community features
+- Virtual reality pet interactions
+- Cross-chain cryptocurrency support

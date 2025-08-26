@@ -31,10 +31,12 @@ Money Paws is built with the help of these amazing open-source libraries and ser
 - **Electron Updater**: For enabling automatic application updates.
 
 ### APIs & Services
-- **Coinbase Commerce API**: For handling all cryptocurrency transactions.
-- **OpenAI API**: For AI-powered pet image generation.
-- **Stability AI API**: For advanced AI image generation.
-- **Google, Facebook, Apple, Twitter/X APIs**: For secure user authentication.
+- **Coinbase Commerce API**: For handling all cryptocurrency transactions
+- **CoinGecko API**: For real-time cryptocurrency price data
+- **OpenAI API**: For AI-powered pet image generation
+- **Stability AI API**: For advanced AI image generation
+- **Twilio API**: For SMS-based two-factor authentication
+- **Google, Facebook, Apple, Twitter/X APIs**: For secure user authentication
 
 ### Accessibility
 - **Screen Reader Community**: For testing and feedback on CLI accessibility features.
@@ -42,8 +44,10 @@ Money Paws is built with the help of these amazing open-source libraries and ser
 - **Web Accessibility Initiative (WAI)**: Guidelines and best practices.
 
 ### Special Thanks
-- **Accessibility Community**: For valuable feedback on making crypto gaming accessible to everyone.
-- **Beta Testers**: Early users who helped identify bugs and suggest improvements.
-- **Open Source Community**: For the countless libraries and tools that made this project possible.
+- **Accessibility Community**: For valuable feedback on making crypto gaming accessible to everyone
+- **Beta Testers**: Early users who helped identify bugs and suggest improvements
+- **Open Source Community**: For the countless libraries and tools that made this project possible
+- **Pet Memorial Feature Contributors**: Community members who provided feedback on the memorial and donation system
+- **Breeding System Testers**: Users who helped refine the genetic inheritance and mating request features
 
-We extend our gratitude to the developers and communities behind these projects for their invaluable contributions to the open-source ecosystem.
+We extend our heartfelt gratitude to the developers and communities behind these projects for their invaluable contributions to the open-source ecosystem and for making Money Paws a more inclusive and comprehensive platform.

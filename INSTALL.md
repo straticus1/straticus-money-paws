@@ -92,6 +92,39 @@ Import the database schema:
 mysql -u money_paws_user -p money_paws < database/schema.sql
 ```
 
+The `schema.sql` file sets up the complete database structure. Below is an overview of recent additions for major features.
+
+#### Pet Memorial & Donation System Schema
+
+The database includes comprehensive support for pet memorial and donation features:
+
+**1. `pets` Table Enhancements:**
+The `pets` table includes new columns to support memorial functionality:
+-   `life_status` (ENUM): Tracks pet status ('alive', 'deceased')
+-   `deceased_date` (TIMESTAMP): Records when the pet passed away
+-   `is_memorial_enabled` (BOOLEAN): Enables the public memorial and donation page
+-   `donation_goal` (DECIMAL(10, 2)): Sets a donation goal for the memorial (max $1000)
+-   `donations_received` (DECIMAL(10, 2)): Tracks total donations received
+
+**2. New `pet_donations` Table:**
+A dedicated table tracks all memorial donations with full audit trail:
+
+```sql
+CREATE TABLE `pet_donations` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `pet_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `message` text COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `pet_id` (`pet_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `pet_donations_ibfk_1` FOREIGN KEY (`pet_id`) REFERENCES `pets` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `pet_donations_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
 #### Step 3: Configuration
 Copy and edit the configuration file:
 ```bash

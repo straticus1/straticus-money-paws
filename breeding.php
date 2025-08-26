@@ -5,6 +5,7 @@
  */
 
 require_once 'includes/functions.php';
+require_once 'includes/security.php';
 
 requireLogin();
 
@@ -21,7 +22,8 @@ include 'includes/header.php';
         <div class="col-md-8 offset-md-2">
             <div class="card">
                 <div class="card-body">
-                    <form id="breeding-form">
+                                        <form id="breeding-form">
+                        <?php echo getCSRFTokenField(); ?>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">

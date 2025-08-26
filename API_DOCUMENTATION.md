@@ -389,4 +389,305 @@ Retrieves the current cryptocurrency balance for the logged-in user.
 
 ---
 
-*More endpoints will be documented here as they are developed.*
+## 8. Pet Memorial & Donation Endpoints
+
+These endpoints manage the pet memorial and donation system.
+
+### 8.1 Mark a Pet as Deceased
+
+Permanently marks a pet as deceased. This action is irreversible and can only be performed by the pet's owner.
+
+- **Endpoint**: `POST /api/mark-pet-deceased.php`
+- **Parameters** (form-data):
+  - `pet_id` (integer, required): The ID of the pet to mark as deceased.
+  - `csrf_token` (string, required): The CSRF token for security.
+- **Success Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Pet has been marked as deceased."
+  }
+  ```
+- **Error Response**:
+  ```json
+  {
+    "success": false,
+    "message": "You do not own this pet."
+  }
+  ```
+
+### 8.2 Configure a Memorial
+
+Allows the pet owner to enable or disable the memorial page and set a donation goal.
+
+- **Endpoint**: `POST /api/configure-memorial.php`
+- **Parameters** (form-data):
+  - `pet_id` (integer, required): The ID of the deceased pet.
+  - `enable_memorial` (boolean, optional): `1` to enable, `0` to disable the memorial.
+  - `donation_goal` (number, optional): A donation goal between 0 and 1000.
+  - `csrf_token` (string, required): The CSRF token for security.
+- **Success Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Memorial settings updated successfully."
+  }
+  ```
+- **Error Response**:
+  ```json
+  {
+    "success": false,
+    "message": "Invalid donation goal. Must be between $0 and $1000."
+  }
+  ```
+
+### 8.3 Make a Donation
+
+Allows a logged-in user to make a donation to a pet's memorial fund.
+
+- **Endpoint**: `POST /api/make-donation.php`
+- **Parameters** (form-data):
+  - `pet_id` (integer, required): The ID of the pet receiving the donation.
+  - `amount` (number, required): The amount to donate in USD.
+  - `message` (string, optional): A supportive message to leave for the owner.
+  - `csrf_token` (string, required): The CSRF token for security.
+- **Success Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Donation successful. Thank you for your contribution."
+  }
+  ```
+- **Error Response**:
+  ```json
+  {
+    "success": false,
+    "message": "Donation amount exceeds the remaining goal."
+  }
+  ```
+
+---
+
+## 9. Pet Memorial & Donation Endpoints (NEW)
+
+These endpoints manage the pet memorial and donation system for deceased pets.
+
+### 9.1 Mark Pet as Deceased
+
+Permanently marks a pet as deceased and converts their page to a memorial. This action is irreversible and can only be performed by the pet's owner.
+
+- **Endpoint**: `POST /api/mark-pet-deceased.php`
+- **Request Body** (form-data):
+  - `pet_id` (integer, required): The ID of the pet to mark as deceased
+  - `csrf_token` (string, required): CSRF protection token
+- **Success Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Pet has been moved to a memorial."
+  }
+  ```
+- **Error Responses**:
+  ```json
+  {
+    "success": false,
+    "message": "You do not own this pet."
+  }
+  ```
+
+### 9.2 Configure Memorial Settings
+
+Allows the pet owner to enable/disable the memorial page and set donation goals.
+
+- **Endpoint**: `POST /api/configure-memorial.php`
+- **Request Body** (form-data):
+  - `pet_id` (integer, required): The ID of the deceased pet
+  - `enable_memorial` (boolean, optional): Enable public memorial and donations
+  - `donation_goal` (number, optional): Donation goal ($0-$1000 USD)
+  - `csrf_token` (string, required): CSRF protection token
+- **Success Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Memorial settings updated successfully."
+  }
+  ```
+- **Error Response**:
+  ```json
+  {
+    "success": false,
+    "message": "Invalid donation goal. Must be between $0 and $1000."
+  }
+  ```
+
+### 9.3 Make Memorial Donation
+
+Allows logged-in users to make donations to pet memorial funds.
+
+- **Endpoint**: `POST /api/make-donation.php`
+- **Request Body** (form-data):
+  - `pet_id` (integer, required): The ID of the pet receiving the donation
+  - `amount` (number, required): Donation amount in USD (must be positive)
+  - `message` (string, optional): Optional supportive message for the owner
+  - `csrf_token` (string, required): CSRF protection token
+- **Success Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Thank you for your generous donation!"
+  }
+  ```
+- **Error Responses**:
+  ```json
+  {
+    "success": false,
+    "message": "This pet is not accepting donations at this time."
+  }
+  ```
+  ```json
+  {
+    "success": false,
+    "message": "The donation goal for this memorial has been met."
+  }
+  ```
+
+---
+
+## 10. Pet Mating Request Endpoints (NEW)
+
+These endpoints manage the mating request system between compatible pets.
+
+### 10.1 Send Mating Request
+
+Allows a user to send a mating request from their pet to another user's compatible pet.
+
+- **Endpoint**: `POST /api/send-mating-request.php`
+- **Request Body** (form-data):
+  - `requester_pet_id` (integer, required): ID of the requesting pet (must be owned by user)
+  - `requested_pet_id` (integer, required): ID of the target pet for mating
+  - `csrf_token` (string, required): CSRF protection token
+- **Success Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Mating request sent successfully!"
+  }
+  ```
+- **Error Responses**:
+  ```json
+  {
+    "success": false,
+    "message": "Pets must be of opposite genders to mate."
+  }
+  ```
+  ```json
+  {
+    "success": false,
+    "message": "Both pets must be at least 18 pet days old."
+  }
+  ```
+  ```json
+  {
+    "success": false,
+    "message": "One or both pets are on a breeding cooldown."
+  }
+  ```
+
+### 10.2 Respond to Mating Request
+
+Allows a user to accept or reject a mating request for their pet. Accepting triggers the breeding process.
+
+- **Endpoint**: `POST /api/respond-to-mating-request.php`
+- **Request Body** (form-data):
+  - `request_id` (integer, required): ID of the mating request
+  - `action` (string, required): Either "accept" or "reject"
+  - `csrf_token` (string, required): CSRF protection token
+- **Success Response (200 OK)**:
+  For rejection:
+  ```json
+  {
+    "success": true,
+    "message": "Mating request rejected."
+  }
+  ```
+  For acceptance:
+  ```json
+  {
+    "success": true,
+    "message": "Mating request accepted! A new pet has been born!"
+  }
+  ```
+- **Error Responses**:
+  ```json
+  {
+    "success": false,
+    "message": "You are not authorized to respond to this request."
+  }
+  ```
+  ```json
+  {
+    "success": false,
+    "message": "This mating request has already been responded to."
+  }
+  ```
+  ```json
+  {
+    "success": false,
+    "message": "One or both pets are not old enough to breed."
+  }
+  ```
+
+---
+
+## 11. Enhanced Pet Detail Endpoints
+
+### 11.1 Get Pet Details with Memorial Information
+
+Retrieves comprehensive pet information including memorial status and donation data.
+
+- **Endpoint**: `GET /pet.php?id={pet_id}`
+- **Parameters**:
+  - `id` (integer, required): The pet ID
+- **Response**: HTML page with pet details including:
+  - Basic pet information (name, age, gender, description)
+  - Owner information
+  - Memorial status and donation progress (if applicable)
+  - Mating request interface (for compatible pets)
+  - Recent donations list (for memorial pets)
+
+### Key Features in Pet Detail Page:
+- **Memorial Management**: Pet owners can mark pets as deceased and configure memorial settings
+- **Donation System**: Community members can make donations with optional messages
+- **Mating Requests**: Users can send mating requests for compatible pets of opposite genders
+- **Progress Tracking**: Visual donation goal progress with percentage completion
+
+---
+
+## 12. System Validations & Business Logic
+
+### Pet Memorial System
+- Only pet owners can mark their pets as deceased
+- Memorial settings can only be configured for deceased pets
+- Users cannot donate to their own pet memorials
+- Donation amounts are automatically capped at remaining goal amount
+- Memorial pages become public upon enabling donations
+
+### Mating Request System
+- Pets must be of opposite genders to mate
+- Both pets must be at least 18 pet days old
+- Pets on breeding cooldowns cannot participate
+- Only one pending request allowed between the same pair of pets
+- Successful mating creates offspring with genetic inheritance
+- Both parent pets receive happiness boosts after successful mating
+- 24-hour breeding cooldown applied to both parents after mating
+
+### Security Features
+- All endpoints require CSRF token validation
+- Proper ownership verification for all pet actions
+- Session-based authentication required
+- Input validation and sanitization on all user data
+- Transaction rollback on any breeding errors
+
+---
+
+*Documentation updated for Money Paws v3.0.0+*

@@ -12,9 +12,16 @@ CREATE TABLE users (
     provider_id VARCHAR(255),
     avatar VARCHAR(255),
     email_verified BOOLEAN DEFAULT FALSE,
+    age_verified BOOLEAN DEFAULT FALSE,
+    birth_date DATE NULL,
+    is_on_vacation BOOLEAN DEFAULT FALSE,
+    vacation_delegate_id INT NULL,
+    vacation_reserved_funds DECIMAL(10, 2) DEFAULT 0.00,
+    vacation_start_date TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    is_admin BOOLEAN DEFAULT FALSE
+    is_admin BOOLEAN DEFAULT FALSE,
+    CONSTRAINT fk_vacation_delegate FOREIGN KEY (vacation_delegate_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Pets table
@@ -23,6 +30,7 @@ CREATE TABLE pets (
     user_id INT NOT NULL,
     filename VARCHAR(255) NOT NULL,
     original_name VARCHAR(255) NOT NULL,
+    gender ENUM('male', 'female') NOT NULL,
     description TEXT,
     file_size INT,
     mime_type VARCHAR(100),
@@ -33,8 +41,14 @@ CREATE TABLE pets (
     is_for_sale BOOLEAN DEFAULT FALSE,
     sale_price_usd DECIMAL(10, 2) NULL,
     `dna` TEXT DEFAULT NULL,
+    `birth_date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `mother_id` INT DEFAULT NULL,
     `father_id` INT DEFAULT NULL,
+    `life_status` ENUM('alive', 'deceased') NOT NULL DEFAULT 'alive',
+    `deceased_date` TIMESTAMP NULL DEFAULT NULL,
+    `is_memorial_enabled` BOOLEAN DEFAULT FALSE,
+    `donation_goal` DECIMAL(10, 2) DEFAULT 0.00,
+    `donations_received` DECIMAL(10, 2) DEFAULT 0.00,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -143,6 +157,15 @@ CREATE TABLE pet_stats (
     UNIQUE KEY unique_pet_stats (pet_id)
 );
 
+CREATE TABLE pet_health (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    pet_id INT NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'healthy', -- e.g., 'healthy', 'sick', 'injured'
+    last_checkup TIMESTAMP NULL,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE
+);
+
 -- Store items (food, treats, toys)
 CREATE TABLE store_items (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -178,13 +201,14 @@ CREATE TABLE notifications (
     sender_user_id INT NOT NULL,
     pet_id INT NULL,
     interaction_id INT NULL,
-    notification_type ENUM('feed', 'treat', 'like', 'adoption', 'new_follower') NOT NULL,
+    request_id INT NULL,
+    notification_type ENUM('feed', 'treat', 'like', 'adoption', 'new_follower', 'mating_request', 'mating_response') NOT NULL,
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (sender_user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE,
-    FOREIGN KEY (interaction_id) REFERENCES pet_interactions(id) ON DELETE SET NULL
+    FOREIGN KEY (request_id) REFERENCES mating_requests(id) ON DELETE CASCADE
 );
 
 -- Pet interactions (feeding, treating by other users)
@@ -205,16 +229,6 @@ CREATE TABLE pet_interactions (
     FOREIGN KEY (item_id) REFERENCES store_items(id) ON DELETE SET NULL
 );
 
--- Add age verification field to users table
-ALTER TABLE users ADD COLUMN age_verified BOOLEAN DEFAULT FALSE;
-ALTER TABLE users ADD COLUMN birth_date DATE NULL;
-
--- Add vacation mode fields to users table
-ALTER TABLE users ADD COLUMN is_on_vacation BOOLEAN DEFAULT FALSE;
-ALTER TABLE users ADD COLUMN vacation_delegate_id INT NULL;
-ALTER TABLE users ADD COLUMN vacation_reserved_funds DECIMAL(10, 2) DEFAULT 0.00;
-ALTER TABLE users ADD COLUMN vacation_start_date TIMESTAMP NULL;
-ALTER TABLE users ADD CONSTRAINT fk_vacation_delegate FOREIGN KEY (vacation_delegate_id) REFERENCES users(id) ON DELETE SET NULL;
 
 -- Insert default store items
 INSERT INTO store_items (name, description, item_type, price_usd, hunger_restore, happiness_boost, duration_hours, emoji, age_restricted) VALUES
@@ -435,6 +449,66 @@ INSERT INTO `quests` (`quest_name`, `quest_description`, `quest_type`, `action_t
 INSERT INTO `achievements` (`achievement_name`, `achievement_description`, `action_type`, `goal_value`, `reward_currency`, `reward_amount`) VALUES
 ('First Friend', 'Make your first friend.', 'add_friend', 1, 'gems', 10),
 ('Pet Owner', 'Own your first pet.', 'own_pet', 1, 'gems', 10),
-('Kind Soul', 'Feed another user\'s pet for the first time.', 'feed_pet_other', 1, 'gems', 5),
+('Kind Soul', 'Feed another user''s pet for the first time.', 'feed_pet_other', 1, 'gems', 5),
 ('Top Dog', 'Own 10 pets.', 'own_pet', 10, 'gems', 50),
 ('Gifting Guru', 'Send a total of 50 gifts.', 'send_gift', 50, 'gems', 100);
+
+-- Mating, Medicine, and Illness Tables
+CREATE TABLE `mating_requests` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `requester_pet_id` INT NOT NULL,
+    `requested_pet_id` INT NOT NULL,
+    `requester_user_id` INT NOT NULL,
+    `requested_user_id` INT NOT NULL,
+    `status` ENUM('pending', 'accepted', 'rejected') NOT NULL DEFAULT 'pending',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `responded_at` TIMESTAMP NULL,
+    FOREIGN KEY (`requester_pet_id`) REFERENCES `pets`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`requested_pet_id`) REFERENCES `pets`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`requester_user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`requested_user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `illnesses` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(100) NOT NULL,
+    `description` TEXT,
+    `severity` ENUM('low', 'medium', 'high') NOT NULL DEFAULT 'medium'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `medicines` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(100) NOT NULL,
+    `description` TEXT,
+    `cures_illness_id` INT,
+    `boosts_health` INT DEFAULT 0,
+    `boosts_happiness` INT DEFAULT 0,
+    `cost_usd` DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (`cures_illness_id`) REFERENCES `illnesses`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Table to track donations for deceased pets
+CREATE TABLE `pet_donations` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `pet_id` INT NOT NULL,
+    `donor_user_id` INT NOT NULL,
+    `amount_usd` DECIMAL(10, 2) NOT NULL,
+    `crypto_type` VARCHAR(10) NULL,
+    `crypto_amount` DECIMAL(20, 8) NULL,
+    `message` TEXT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`pet_id`) REFERENCES `pets`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`donor_user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pet_prescriptions` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `pet_id` INT NOT NULL,
+    `medicine_id` INT NOT NULL,
+    `doses_per_day` INT NOT NULL DEFAULT 1,
+    `doses_given_today` INT NOT NULL DEFAULT 0,
+    `last_dose_at` TIMESTAMP NULL,
+    `assigned_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`pet_id`) REFERENCES `pets`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`medicine_id`) REFERENCES `medicines`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

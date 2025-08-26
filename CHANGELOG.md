@@ -6,6 +6,64 @@ All notable changes to Money Paws will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2025-01-02 (LATEST)
+
+### 💕 NEW FEATURES: Pet Memorial & Breeding Enhancement
+
+This update introduces comprehensive pet memorial and donation systems alongside an enhanced breeding experience with peer-to-peer mating requests.
+
+#### 🕊️ Pet Memorial & Donation System
+- **Pet Memorial Pages**: Convert deceased pets into lasting digital memorials
+- **Community Donations**: Allow users to make monetary donations to pet memorials
+- **Donation Goals**: Set fundraising goals up to $1000 per memorial
+- **Progress Tracking**: Visual progress bars showing donation completion
+- **Memorial Messages**: Optional tribute messages with donations
+- **Owner Controls**: Full control over memorial visibility and donation settings
+
+#### 🐶❤️🐱 Enhanced Mating Request System  
+- **Peer-to-Peer Breeding**: Send mating requests to other users' compatible pets
+- **Gender Validation**: Automatic verification of opposite-gender requirements
+- **Age Verification**: Ensure pets meet minimum breeding age (18 pet days)
+- **Breeding Cooldowns**: Prevent excessive breeding with 24-hour cooldown periods
+- **Request Management**: Accept/reject mating requests through notifications
+- **Genetic Inheritance**: Advanced DNA combination with genetic mutations
+- **Happiness Boost**: Both parents receive happiness increases after successful mating
+
+#### 💰 Enhanced Financial Systems
+- **Live Crypto Pricing**: Production-ready CoinGecko API integration for real-time pricing
+- **Improved Balance Validation**: Enhanced funds checking for vacation mode and transactions
+- **SMS 2FA Production**: Complete Twilio integration for SMS-based two-factor authentication
+
+#### 🏠 Enhanced Pet Detail Pages
+- **Memorial Management**: Intuitive interface for configuring memorial settings
+- **Mating Interface**: Easy-to-use mating request system for compatible pets
+- **Donation Interface**: Streamlined donation process with goal tracking
+- **Recent Donations Display**: Show recent contributions with donor recognition
+
+### Changed
+- **Database Schema**: Expanded with new tables for donations and mating requests
+- **Pet Status System**: Enhanced life status tracking (alive/deceased)
+- **Security Enhancements**: Production-ready SMS verification with proper error handling
+- **API Documentation**: Comprehensive updates covering new memorial and mating endpoints
+
+### Fixed
+- **CSRF Validation**: Proper CSRF token implementation across all new features
+- **Input Sanitization**: Enhanced security for all user-generated content
+- **Error Handling**: Comprehensive error messages and transaction rollbacks
+- **Database Transactions**: Atomic operations for complex breeding processes
+
+### Technical Improvements
+- **New API Endpoints**: 
+  - `/api/mark-pet-deceased.php` - Mark pets as deceased
+  - `/api/configure-memorial.php` - Configure memorial settings  
+  - `/api/make-donation.php` - Process memorial donations
+  - `/api/send-mating-request.php` - Send breeding requests
+  - `/api/respond-to-mating-request.php` - Accept/reject mating requests
+- **Enhanced Database Schema**: New tables for `pet_donations` and `mating_requests`
+- **Business Logic**: Comprehensive validation for breeding eligibility and donation limits
+
+---
+
 ## [3.0.0] - 2025-01-01
 
 ### 🚀 MAJOR RELEASE: Enhanced Gaming & Social Platform
@@ -81,6 +139,32 @@ This is a major release that transforms Money Paws from a simple pet platform in
 - **Database Migration**: Automatic schema updates for existing installations
 - **Configuration Updates**: New configuration options for social features and 2FA
 - **File Structure**: Reorganized project structure with new directories for features
+
+---
+
+## [2.3.0] - 2025-08-26
+
+### Added
+- **Pet Memorial and Donation System**
+  - **Pet Memorials**: Owners can now mark their pets as deceased, which converts the pet's profile into a permanent memorial page to honor their memory.
+  - **Memorial Configuration**: Pet owners can enable or disable the public memorial and set a donation goal (up to $1,000) for their deceased pet.
+  - **Community Donations**: Other users can make donations towards the memorial goal and leave supportive messages for the owner.
+  - **Donation Tracking**: The memorial page includes a progress bar to track donations received against the goal.
+  - **New API Endpoints**:
+    - `POST /api/mark-pet-deceased.php`: Marks a pet as deceased.
+    - `POST /api/configure-memorial.php`: Configures memorial settings and donation goals.
+    - `POST /api/make-donation.php`: Processes donations from other users.
+
+### Changed
+- **Database Schema**:
+  - Added `life_status` (ENUM 'alive', 'deceased'), `is_memorial_enabled` (BOOLEAN), `donation_goal` (DECIMAL), `donations_received` (DECIMAL), and `original_name` (VARCHAR) columns to the `pets` table.
+  - Created a new `pet_donations` table to track individual donations, including donor, amount, and message.
+- **Pet Profile Page (`pet.php`)**:
+  - The page now dynamically displays a memorial banner, donation form, progress bar, and recent donations for deceased pets with active memorials.
+  - Interactive features like mating requests are disabled for deceased pets.
+
+### Security
+- All new API endpoints include CSRF token validation and ownership checks to ensure secure operations.
 
 ---
 

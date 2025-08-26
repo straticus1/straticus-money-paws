@@ -1,6 +1,5 @@
 -- Money Paws Database Schema (SQLite Version)
 -- This schema is adapted for SQLite for testing and development purposes.
--- Developed and Designed by Ryan Coleman. <coleman.ryan@gmail.com>
 
 PRAGMA foreign_keys = ON;
 
@@ -43,6 +42,22 @@ CREATE TABLE pets (
     is_for_sale BOOLEAN DEFAULT 0,
     sale_price_usd REAL NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Mating Requests
+CREATE TABLE mating_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    requester_pet_id INTEGER NOT NULL,
+    requested_pet_id INTEGER NOT NULL,
+    requester_user_id INTEGER NOT NULL,
+    requested_user_id INTEGER NOT NULL,
+    status TEXT CHECK(status IN ('pending', 'accepted', 'rejected')) NOT NULL DEFAULT 'pending',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    responded_at DATETIME,
+    FOREIGN KEY (requester_pet_id) REFERENCES pets(id) ON DELETE CASCADE,
+    FOREIGN KEY (requested_pet_id) REFERENCES pets(id) ON DELETE CASCADE,
+    FOREIGN KEY (requester_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (requested_user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Pet Health Table
@@ -210,22 +225,6 @@ CREATE TABLE user_inventory (
     UNIQUE (user_id, item_id)
 );
 
--- Pet interactions (feeding, treating by other users)
-CREATE TABLE notifications (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    recipient_user_id INTEGER NOT NULL,
-    sender_user_id INTEGER NOT NULL,
-    pet_id INTEGER,
-    interaction_id INTEGER,
-    notification_type TEXT CHECK(notification_type IN ('feed', 'treat', 'like', 'adoption', 'new_follower')) NOT NULL,
-    is_read INTEGER DEFAULT 0,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (sender_user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE,
-    FOREIGN KEY (interaction_id) REFERENCES pet_interactions(id) ON DELETE SET NULL
-);
-
 CREATE TABLE pet_interactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     pet_id INTEGER NOT NULL,
@@ -241,6 +240,24 @@ CREATE TABLE pet_interactions (
     FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (item_id) REFERENCES store_items(id) ON DELETE SET NULL
+);
+
+-- Notifications for user interactions
+CREATE TABLE notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    recipient_user_id INTEGER NOT NULL,
+    sender_user_id INTEGER NOT NULL,
+    pet_id INTEGER,
+    interaction_id INTEGER,
+    request_id INTEGER,
+    notification_type TEXT CHECK(notification_type IN ('feed', 'treat', 'like', 'adoption', 'new_follower', 'mating_request', 'mating_response')) NOT NULL,
+    is_read INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE,
+    FOREIGN KEY (interaction_id) REFERENCES pet_interactions(id) ON DELETE SET NULL,
+    FOREIGN KEY (request_id) REFERENCES mating_requests(id) ON DELETE CASCADE
 );
 
 -- Insert default store items

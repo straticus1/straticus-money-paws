@@ -15,11 +15,13 @@ Money Paws is a revolutionary cryptocurrency-powered pet platform where users ca
 - **Privacy Controls**: Toggle pet visibility on public profiles
 - **Social Features**: Like, view, and interact with community pets
 - **User-to-User Messaging**: Secure, private conversations between users
-- **Real-time Notifications**: Instant alerts for new messages and other interactions
+- **Real-time Notifications**: Instant alerts for new messages and interactions
 - **Abandoned Pet Adoption**: Find and adopt pets that haven't been cared for in 30+ days
 - **Vacation Mode**: Delegate pet care to trusted users while away
-- **Leaderboards**: Community rankings for top pets, owners, and active users
-    - **Pet Breeding & Genetics**: Breed your pets to create unique offspring with inherited and mutated traits.
+- **Pet Breeding & Genetics**: Advanced breeding system with DNA inheritance and genetic mutations
+- **Mating Request System**: Send and respond to breeding requests between compatible pets
+- **Pet Memorials & Donations**: Honor deceased pets with memorial pages and community donations
+- **Leaderboards**: Community rankings for top pets, owners, and most active users
 
 ### 💰 Cryptocurrency Integration
 - **Multi-Crypto Support**: BTC, ETH, USDC, SOL, XRP with real-time pricing
