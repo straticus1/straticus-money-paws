@@ -105,9 +105,17 @@ Money Paws is a revolutionary cryptocurrency-powered pet platform where users ca
 - **OAuth2 APIs** for social authentication
 - **Real-time Crypto Pricing** via multiple exchanges
 
-## 🚨 Critical Bug Fix Notice
+## 🔒 Security Update Notice
 
-**IMPORTANT**: If you experienced site loading issues after the recent documentation updates, this has been resolved. Missing CSRF token functions (`getCSRFTokenField()`, `getPetById()`, `getDonationsForPet()`) have been added to `includes/functions.php`. Please pull the latest changes or manually add these functions if your site is not loading.
+**SECURITY UPDATE v3.1.2**: Major security enhancements have been implemented to protect against XSS, CSRF, and input validation attacks. This update includes:
+
+- Fixed critical CSRF token validation bug
+- Secured 15+ unvalidated GET parameters across all pages
+- Enhanced input validation and sanitization
+- Strengthened API endpoint security
+- Improved UI accessibility with better text contrast
+
+**This is a mandatory security update for all installations. Please update immediately.**
 
 ## 📋 Prerequisites
 

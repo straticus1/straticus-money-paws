@@ -8,7 +8,7 @@ require_once 'includes/functions.php';
 // Determine the user ID to display
 $profile_user_id = null;
 if (isset($_GET['id'])) {
-    $profile_user_id = (int)$_GET['id'];
+    $profile_user_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 } elseif (isLoggedIn()) {
     $profile_user_id = $_SESSION['user_id'];
 } else {

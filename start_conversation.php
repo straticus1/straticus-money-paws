@@ -2,7 +2,7 @@
 require_once 'includes/functions.php';
 requireLogin();
 
-$recipientId = isset($_GET['id']) ? (int)$_GET['id'] : null;
+$recipientId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
 // Prevent users from messaging themselves or if the ID is invalid
 if (!$recipientId || $recipientId == $_SESSION['user_id']) {

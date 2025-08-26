@@ -12,8 +12,8 @@ if (!isset($_GET['crypto']) || !isset($_GET['usd'])) {
     exit;
 }
 
-$cryptoType = strtoupper($_GET['crypto']);
-$usdAmount = floatval($_GET['usd']);
+$cryptoType = strtoupper(sanitizeInput($_GET['crypto']));
+$usdAmount = filter_input(INPUT_GET, 'usd', FILTER_VALIDATE_FLOAT);
 
 if (!array_key_exists($cryptoType, SUPPORTED_CRYPTOS)) {
     echo json_encode(['success' => false, 'message' => 'Unsupported cryptocurrency']);

@@ -12,7 +12,7 @@ if (!is_logged_in()) {
 }
 
 $current_user_id = $_SESSION['user_id'];
-$search_term = isset($_GET['q']) ? trim($_GET['q']) : '';
+$search_term = sanitizeInput($_GET['q'] ?? '');
 
 if (empty($search_term)) {
     echo json_encode(['success' => true, 'users' => []]);

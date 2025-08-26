@@ -6,7 +6,8 @@
 require_once 'includes/functions.php';
 
 // Pagination
-$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$page = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT) ?: 1;
+$page = max(1, $page);
 $limit = 12;
 $offset = ($page - 1) * $limit;
 

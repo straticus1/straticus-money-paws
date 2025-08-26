@@ -6,6 +6,74 @@ All notable changes to Money Paws will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.3] - 2025-08-26 (DOCUMENTATION & CODE QUALITY UPDATE)
+
+### 📚 COMPREHENSIVE DOCUMENTATION OVERHAUL
+
+**QUALITY ENHANCEMENT**: Complete documentation review and improvement across all project files for better developer experience and user guidance.
+
+#### Documentation Improvements
+- **README.md**: Enhanced project description, feature coverage, and installation instructions
+- **API_DOCUMENTATION.md**: Comprehensive API coverage with clear request/response examples
+- **INSTALL.md**: Improved installation guide with clearer database schema explanations
+- **CHANGELOG.md**: Better formatting and comprehensive feature documentation
+- **ABOUT.md & CREDITS.md**: Updated project philosophy and contributor recognition
+
+#### Code Quality Enhancements
+- **Grammar & Style**: Fixed grammar issues and improved clarity across all documentation
+- **Technical Accuracy**: Verified all technical instructions and examples
+- **Consistency**: Standardized formatting and terminology throughout project
+- **User Experience**: Enhanced readability for both developers and end users
+
+#### Files Updated
+- All main documentation files (README.md, INSTALL.md, API_DOCUMENTATION.md)
+- CLI and desktop application README files
+- Project philosophy and credits documentation
+- Changelog formatting and structure improvements
+
+#### Impact
+- **Developer Friendly**: Clear setup and development guidance
+- **Production Ready**: Comprehensive deployment documentation
+- **User Focused**: Better understanding of features and capabilities
+- **Professional Quality**: Documentation now matches the high quality of the codebase
+
+**This release focuses on documentation excellence and does not modify core functionality.**
+
+---
+
+## [3.1.2] - 2025-08-26 (SECURITY & UI UPDATE)
+
+### 🔒 MAJOR SECURITY ENHANCEMENTS
+
+**CRITICAL SECURITY UPDATE**: Comprehensive security audit and vulnerability fixes to protect against XSS, CSRF, and input validation attacks.
+
+#### Security Fixes
+- **CSRF Token Validation**: Fixed critical bug where CSRF tokens were incorrectly invalidated after validation
+- **XSS Prevention**: Secured 15+ unvalidated GET parameters across all pages and API endpoints
+- **Input Validation**: Enhanced all user input handling with proper sanitization and validation
+- **Parameter Tampering**: Protected against malicious parameter manipulation
+- **API Security**: Strengthened validation in crypto pricing, pet data, and search endpoints
+
+#### UI Improvements
+- **Welcome Text**: Changed "Welcome to Money Paws" header color from orange to dark blue (#2c3e50) for better readability
+- **Visual Consistency**: Improved text contrast and accessibility
+
+#### Files Secured
+- `pet.php`, `search.php`, `profile.php`, `gallery.php`, `abandoned_pets.php`
+- `conversation.php`, `start_conversation.php`, `sell_pet.php`
+- API endpoints: `get-crypto-price.php`, `get-pet.php`, `search-users.php`
+- Enhanced `validate_csrf_token()` function in `includes/functions.php`
+
+#### Impact
+- **Production Ready**: Platform now secure for live deployment
+- **XSS Protection**: All user inputs properly sanitized against script injection
+- **CSRF Protection**: Forms protected against cross-site request forgery
+- **Input Validation**: Robust validation prevents malicious data entry
+
+**This is a mandatory security update for all installations.**
+
+---
+
 ## [3.1.1] - 2025-01-02 (HOTFIX)
 
 ### 🚑 CRITICAL HOTFIX: Missing Function Definitions

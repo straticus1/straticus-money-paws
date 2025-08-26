@@ -1,7 +1,7 @@
 <?php
 require_once 'includes/functions.php';
 
-$query = $_GET['q'] ?? '';
+$query = sanitizeInput($_GET['q'] ?? '');
 $results = [];
 if (!empty($query)) {
     $results = searchSite($query);

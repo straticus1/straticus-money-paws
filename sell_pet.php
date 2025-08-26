@@ -7,8 +7,8 @@ requireLogin();
 $user_id = $_SESSION['user_id'];
 $user_pets = getUserPets($user_id);
 
-$error = $_GET['error'] ?? '';
-$success = $_GET['success'] ?? '';
+$error = sanitizeInput($_GET['error'] ?? '');
+$success = sanitizeInput($_GET['success'] ?? '');
 
 $pageTitle = 'Sell Your Pet';
 require_once 'includes/html_head.php';

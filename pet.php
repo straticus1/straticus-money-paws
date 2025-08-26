@@ -6,7 +6,7 @@
 require_once 'includes/functions.php';
 require_once 'includes/security.php';
 
-$pet_id = $_GET['id'] ?? null;
+$pet_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
 if (!$pet_id) {
     header('Location: gallery.php');

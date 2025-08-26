@@ -12,7 +12,7 @@ if (!isset($_GET['id'])) {
     exit;
 }
 
-$petId = intval($_GET['id']);
+$petId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
 try {
     $stmt = $pdo->prepare("

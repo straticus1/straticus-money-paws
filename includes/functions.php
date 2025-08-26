@@ -964,12 +964,7 @@ function generate_csrf_token() {
 }
 
 function validate_csrf_token($token) {
-    if (isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token)) {
-        // Token is valid, unset it to prevent reuse
-        unset($_SESSION['csrf_token']);
-        return true;
-    }
-    return false;
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
 function updatePetHappiness($pet_id, $happiness_change) {
@@ -987,13 +982,6 @@ function updatePetHappiness($pet_id, $happiness_change) {
     return $stmt->execute([$happiness_change, $pet_id]);
 }
 
-/**
- * Get CSRF token field for forms
- */
-function getCSRFTokenField() {
-    $token = generate_csrf_token();
-    return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token) . '">';
-}
 
 /**
  * Get pet by ID with error handling
@@ -1027,24 +1015,3 @@ function getPetById($pet_id) {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-/**
- * Get donations for a pet memorial
- */
-function getDonationsForPet($pet_id) {
-    $pdo = get_db();
-    
-    if (defined('DEVELOPER_MODE') && DEVELOPER_MODE) {
-        return []; // Return empty array in demo mode
-    }
-    
-    $stmt = $pdo->prepare("
-        SELECT pd.*, u.name as donor_name 
-        FROM pet_donations pd 
-        JOIN users u ON pd.donor_user_id = u.id 
-        WHERE pd.pet_id = ? 
-        ORDER BY pd.created_at DESC 
-        LIMIT 10
-    ");
-    $stmt->execute([$pet_id]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}

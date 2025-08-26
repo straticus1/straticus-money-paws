@@ -2,7 +2,7 @@
 require_once 'includes/functions.php';
 requireLogin();
 
-$conversationId = isset($_GET['id']) ? (int)$_GET['id'] : null;
+$conversationId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 if (!$conversationId) {
     redirectTo('messages.php');
 }

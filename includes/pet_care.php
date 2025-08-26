@@ -437,13 +437,6 @@ function getPetHappinessStatus($happinessLevel) {
     return ['status' => 'depressed', 'emoji' => '😭', 'message' => 'Very sad'];
 }
 
-function getPetById($petId) {
-    global $pdo;
-    
-    $stmt = $pdo->prepare("SELECT * FROM pets WHERE id = ?");
-    $stmt->execute([$petId]);
-    return $stmt->fetch(PDO::FETCH_ASSOC);
-}
 
 function useItemOnPet($userId, $petId, $itemId, $targetType = 'owned') {
     global $pdo;
