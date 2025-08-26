@@ -427,28 +427,51 @@ tar -czf /backups/money_paws_files_$(date +%Y%m%d_%H%M%S).tar.gz /var/www/money-
 #### Prerequisites
 - Node.js 16.0 or higher
 - npm or yarn package manager
-- Completed web application installation
+- A running instance of the Money Paws web application (for the API).
 
-#### Installation
+#### 1. Configuration
+
+Before building the desktop application, you must configure it to connect to your web server's API.
+
+1.  **Open the main process file**: `gui/desktop/main.js`
+2.  **Locate the `API_BASE_URL` constant** (around line 22):
+    ```javascript
+    const API_BASE_URL = isDev ? 'http://localhost' : 'https://your-domain.com';
+    ```
+3.  **Update the production URL**: Change `'https://your-domain.com'` to the actual domain where your Money Paws web application is hosted. For example:
+    ```javascript
+    const API_BASE_URL = isDev ? 'http://localhost' : 'https://paws.money';
+    ```
+    The `isDev` flag is automatically handled when you run the development server (`npm run dev`), so you only need to set the production URL.
+
+#### 2. Installation & Running
+
 ```bash
-# Navigate to desktop app directory
+# Navigate to the desktop app directory
 cd gui/desktop
 
-# Install dependencies
+# Install Node.js dependencies
 npm install
 
-# Start in development mode
+# Start the app in development mode
+# This connects to your local web server (e.g., http://localhost)
 npm run dev
-
-# Or build for production
-npm run build
 ```
 
-#### Platform-Specific Builds
+The `npm run dev` command launches the application with developer tools enabled, making it easy to debug.
+
+#### 3. Building for Production
+
+To create distributable installers, use the following commands. The output files will be saved in the `gui/desktop/dist/` directory.
+
 ```bash
-npm run build-mac    # macOS DMG
-npm run build-win    # Windows NSIS installer
-npm run build-linux  # Linux AppImage
+# Build for all platforms defined in package.json
+npm run build
+
+# Or, build for a specific platform:
+npm run build-mac    # macOS (.dmg)
+npm run build-win    # Windows (.exe installer)
+npm run build-linux  # Linux (.AppImage)
 ```
 
 ### 🦶 CLI Client Setup (Accessibility)

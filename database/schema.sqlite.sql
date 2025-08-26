@@ -16,6 +16,7 @@ CREATE TABLE users (
     email_verified BOOLEAN DEFAULT 0,
     birth_date DATE NULL,
     age_verified BOOLEAN DEFAULT 0,
+    balance REAL DEFAULT 100.00 NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     is_admin BOOLEAN DEFAULT 0,
@@ -42,6 +43,38 @@ CREATE TABLE pets (
     is_for_sale BOOLEAN DEFAULT 0,
     sale_price_usd REAL NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Pet Health Table
+CREATE TABLE IF NOT EXISTS pet_health (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pet_id INTEGER NOT NULL,
+    health_points INTEGER NOT NULL DEFAULT 100 CHECK(health_points >= 0 AND health_points <= 100),
+    status VARCHAR(50) NOT NULL DEFAULT 'healthy', -- e.g., healthy, sick, injured
+    last_checkup_at TIMESTAMP,
+    notes TEXT,
+    FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE
+);
+
+-- Illnesses Catalog Table
+CREATE TABLE IF NOT EXISTS illnesses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    severity INTEGER NOT NULL DEFAULT 1 CHECK(severity >= 1 AND severity <= 10),
+    treatment_item_id INTEGER, -- FK to store_items for specific medicine
+    treatment_cost DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    FOREIGN KEY (treatment_item_id) REFERENCES store_items(id) ON DELETE SET NULL
+);
+
+-- Pet Active Illnesses Table (join table)
+CREATE TABLE IF NOT EXISTS pet_active_illnesses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pet_id INTEGER NOT NULL,
+    illness_id INTEGER NOT NULL,
+    diagnosed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE,
+    FOREIGN KEY (illness_id) REFERENCES illnesses(id) ON DELETE CASCADE
 );
 
 -- Pet likes table
@@ -357,3 +390,101 @@ CREATE INDEX idx_security_logs_user_id ON security_logs(user_id);
 CREATE INDEX idx_security_logs_event ON security_logs(event_type);
 CREATE INDEX idx_withdrawal_requests_user_id ON withdrawal_requests(user_id);
 CREATE INDEX idx_withdrawal_requests_status ON withdrawal_requests(status);
+
+-- Quests and Achievements Schema (SQLite)
+CREATE TABLE quests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  quest_name VARCHAR(255) NOT NULL,
+  quest_description TEXT NOT NULL,
+  quest_type TEXT CHECK(quest_type IN ('daily', 'weekly', 'event', 'main')) NOT NULL DEFAULT 'daily',
+  action_type VARCHAR(50) NOT NULL,
+  goal_value INTEGER NOT NULL,
+  reward_currency VARCHAR(10) NOT NULL DEFAULT 'paw_coins',
+  reward_amount INTEGER NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_quests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  quest_id INTEGER NOT NULL,
+  progress INTEGER NOT NULL DEFAULT 0,
+  status TEXT CHECK(status IN ('in_progress', 'completed', 'claimed')) NOT NULL DEFAULT 'in_progress',
+  assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  completed_at DATETIME NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (quest_id) REFERENCES quests(id) ON DELETE CASCADE
+);
+
+CREATE TABLE achievements (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  achievement_name VARCHAR(255) NOT NULL,
+  achievement_description TEXT NOT NULL,
+  action_type VARCHAR(50) NOT NULL,
+  goal_value INTEGER NOT NULL,
+  reward_currency VARCHAR(10) NOT NULL DEFAULT 'gems',
+  reward_amount INTEGER NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_achievements (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  achievement_id INTEGER NOT NULL,
+  unlocked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (achievement_id) REFERENCES achievements(id) ON DELETE CASCADE,
+  UNIQUE (user_id, achievement_id)
+);
+
+-- Insert Default Quests
+INSERT INTO quests (quest_name, quest_description, quest_type, action_type, goal_value, reward_currency, reward_amount, is_active) VALUES
+('Feed a Friend', 'Feed any pet 5 times.', 'daily', 'feed_pet', 5, 'paw_coins', 50, 1),
+('Social Butterfly', 'Add 2 new friends.', 'daily', 'add_friend', 2, 'paw_coins', 100, 1),
+('Generous Gifter', 'Send a gift to a friend.', 'daily', 'send_gift', 1, 'paw_coins', 75, 1),
+('Window Shopper', 'Visit the store page.', 'daily', 'visit_store', 1, 'paw_coins', 20, 1),
+('Play Time', 'Use a toy on any pet 3 times.', 'daily', 'use_toy', 3, 'paw_coins', 60, 1);
+
+-- Pet Personalities and Social Bonds
+CREATE TABLE pet_personalities (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  pet_id INTEGER NOT NULL,
+  trait VARCHAR(50) NOT NULL, -- e.g., 'bravery', 'friendliness', 'curiosity'
+  value INTEGER NOT NULL DEFAULT 50, -- A score from 0-100
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE,
+  UNIQUE (pet_id, trait)
+);
+
+CREATE TABLE pet_social_bonds (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  pet_one_id INTEGER NOT NULL,
+  pet_two_id INTEGER NOT NULL,
+  bond_type TEXT CHECK(bond_type IN ('friendship', 'rivalry', 'family')) NOT NULL,
+  bond_strength INTEGER NOT NULL DEFAULT 0, -- A score representing the strength of the bond
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (pet_one_id) REFERENCES pets(id) ON DELETE CASCADE,
+  FOREIGN KEY (pet_two_id) REFERENCES pets(id) ON DELETE CASCADE,
+  UNIQUE (pet_one_id, pet_two_id)
+);
+
+CREATE TABLE pet_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_pet_id INTEGER NOT NULL,
+    recipient_user_id INTEGER NOT NULL,
+    message_content TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sender_pet_id) REFERENCES pets(id) ON DELETE CASCADE,
+    FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Insert Default Achievements
+INSERT INTO achievements (achievement_name, achievement_description, action_type, goal_value, reward_currency, reward_amount) VALUES
+('First Friend', 'Make your first friend.', 'add_friend', 1, 'gems', 10),
+('Pet Owner', 'Own your first pet.', 'own_pet', 1, 'gems', 10),
+('Kind Soul', 'Feed another user''s pet for the first time.', 'feed_pet_other', 1, 'gems', 5),
+('Top Dog', 'Own 10 pets.', 'own_pet', 10, 'gems', 50),
+('Gifting Guru', 'Send a total of 50 gifts.', 'send_gift', 50, 'gems', 100);

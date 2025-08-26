@@ -6,8 +6,14 @@
 require_once 'includes/functions.php';
 require_once 'includes/crypto.php';
 require_once 'includes/pet_care.php';
+require_once 'includes/quests.php';
 
 requireLogin();
+
+// Track quest progress for visiting the store
+if (isset($_SESSION['user_id'])) {
+    update_quest_progress($_SESSION['user_id'], 'visit_store');
+}
 
 $currentUser = getUserById($_SESSION['user_id']);
 $error = '';

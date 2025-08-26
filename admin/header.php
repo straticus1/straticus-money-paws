@@ -18,6 +18,7 @@
                 <a href="/admin">Dashboard</a>
                 <a href="/admin/users.php">Users</a>
                 <a href="/admin/pets.php">Pets</a>
+                <a href="/admin/personalities.php">Personalities</a>
                 <a href="/">View Site</a>
                 <a href="/logout.php">Logout</a>
             </nav>

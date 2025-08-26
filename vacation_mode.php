@@ -25,12 +25,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } elseif ($delegate_user['id'] == $_SESSION['user_id']) {
                     $error = "You cannot delegate pet care to yourself.";
                 } else {
-                    // TODO: Check if user has enough funds to reserve.
-                    if (setVacationMode($_SESSION['user_id'], $delegate_user['id'], $reserved_funds)) {
-                        $message = "Vacation mode has been enabled. Your pets will be cared for by {$delegate_user['name']}.";
-                        $user = getUserById($_SESSION['user_id']); // Refresh user data
+                    // Check if user has enough funds to reserve
+                    $totalBalance = getUserTotalUSDBalance($_SESSION['user_id']);
+                    if ($totalBalance < $reserved_funds) {
+                        $error = "Insufficient funds to reserve $" . number_format($reserved_funds, 2) . ". Your total balance is $" . number_format($totalBalance, 2) . ".";
                     } else {
-                        $error = "There was an error enabling vacation mode. Please try again.";
+                        if (setVacationMode($_SESSION['user_id'], $delegate_user['id'], $reserved_funds)) {
+                            $message = "Vacation mode has been enabled. Your pets will be cared for by {$delegate_user['name']}.";
+                            $user = getUserById($_SESSION['user_id']); // Refresh user data
+                        } else {
+                            $error = "There was an error enabling vacation mode. Please try again.";
+                        }
                     }
                 }
             }

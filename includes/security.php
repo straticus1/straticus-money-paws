@@ -54,15 +54,56 @@ function sendEmailVerification($email, $code) {
 }
 
 function sendSMSVerification($phone, $code) {
-    // This would integrate with an SMS service like Twilio
-    // For now, we'll simulate it
+    // In developer mode, just log the code
     if (defined('DEVELOPER_MODE') && DEVELOPER_MODE) {
         error_log("SMS Verification Code for $phone: $code");
         return true;
     }
     
-    // TODO: Implement actual SMS sending with Twilio or similar service
-    return false;
+    // Production SMS implementation with Twilio
+    if (!defined('TWILIO_ACCOUNT_SID') || !defined('TWILIO_AUTH_TOKEN') || !defined('TWILIO_FROM_PHONE')) {
+        error_log('Twilio credentials not configured for SMS verification');
+        return false;
+    }
+    
+    try {
+        $url = 'https://api.twilio.com/2010-04-01/Accounts/' . TWILIO_ACCOUNT_SID . '/Messages.json';
+        $data = [
+            'From' => TWILIO_FROM_PHONE,
+            'To' => $phone,
+            'Body' => "Money Paws withdrawal verification code: $code\n\nThis code will expire in 10 minutes. If you didn't request this, contact support immediately."
+        ];
+        
+        $post = http_build_query($data);
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => [
+                    'Authorization: Basic ' . base64_encode(TWILIO_ACCOUNT_SID . ':' . TWILIO_AUTH_TOKEN),
+                    'Content-Type: application/x-www-form-urlencoded',
+                    'Content-Length: ' . strlen($post)
+                ],
+                'content' => $post,
+                'timeout' => 30
+            ]
+        ]);
+        
+        $response = @file_get_contents($url, false, $context);
+        if ($response !== false) {
+            $data = json_decode($response, true);
+            if (isset($data['error_code'])) {
+                error_log('Twilio SMS error: ' . $data['error_code'] . ' - ' . $data['message']);
+                return false;
+            }
+            return true;
+        } else {
+            error_log('Failed to send SMS via Twilio API');
+            return false;
+        }
+    } catch (Exception $e) {
+        error_log('SMS sending error: ' . $e->getMessage());
+        return false;
+    }
 }
 
 function verifyGoogleAuthenticator($secret, $code) {

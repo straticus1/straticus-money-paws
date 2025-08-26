@@ -32,6 +32,9 @@ CREATE TABLE pets (
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_for_sale BOOLEAN DEFAULT FALSE,
     sale_price_usd DECIMAL(10, 2) NULL,
+    `dna` TEXT DEFAULT NULL,
+    `mother_id` INT DEFAULT NULL,
+    `father_id` INT DEFAULT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -359,3 +362,79 @@ CREATE INDEX idx_security_logs_event ON security_logs(event_type);
 CREATE INDEX idx_withdrawal_requests_user_id ON withdrawal_requests(user_id);
 CREATE INDEX idx_withdrawal_requests_status ON withdrawal_requests(status);
 CREATE INDEX idx_notifications_is_read ON notifications(is_read);
+
+-- Paws.money - Quests and Achievements Schema
+-- Version 1.0
+
+-- Table to store all available quests
+CREATE TABLE `quests` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `quest_name` VARCHAR(255) NOT NULL,
+  `quest_description` TEXT NOT NULL,
+  `quest_type` ENUM('daily', 'weekly', 'event', 'main') NOT NULL DEFAULT 'daily',
+  `action_type` VARCHAR(50) NOT NULL, -- e.g., 'feed_pet', 'send_gift', 'add_friend'
+  `goal_value` INT NOT NULL, -- e.g., feed 5 times, send 3 gifts
+  `reward_currency` VARCHAR(10) NOT NULL DEFAULT 'paw_coins',
+  `reward_amount` INT NOT NULL,
+  `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Table to track user progress on active quests
+CREATE TABLE `user_quests` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `quest_id` INT NOT NULL,
+  `progress` INT NOT NULL DEFAULT 0,
+  `status` ENUM('in_progress', 'completed', 'claimed') NOT NULL DEFAULT 'in_progress',
+  `assigned_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `completed_at` TIMESTAMP NULL,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`quest_id`) REFERENCES `quests`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Table to store all available achievements
+CREATE TABLE `achievements` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `achievement_name` VARCHAR(255) NOT NULL,
+  `achievement_description` TEXT NOT NULL,
+  `action_type` VARCHAR(50) NOT NULL, -- e.g., 'total_pets_owned', 'total_gifts_sent'
+  `goal_value` INT NOT NULL,
+  `reward_currency` VARCHAR(10) NOT NULL DEFAULT 'gems',
+  `reward_amount` INT NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Table to track achievements unlocked by users
+CREATE TABLE `breeding_cooldowns` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `pet_id` INT UNSIGNED NOT NULL,
+    `cooldown_ends_at` TIMESTAMP NOT NULL,
+    FOREIGN KEY (`pet_id`) REFERENCES `pets`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `user_achievements` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `achievement_id` INT NOT NULL,
+  `unlocked_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`achievement_id`) REFERENCES `achievements`(`id`) ON DELETE CASCADE,
+  UNIQUE KEY `user_achievement_unique` (`user_id`, `achievement_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Insert Default Quests
+INSERT INTO `quests` (`quest_name`, `quest_description`, `quest_type`, `action_type`, `goal_value`, `reward_currency`, `reward_amount`, `is_active`) VALUES
+('Feed a Friend', 'Feed any pet 5 times.', 'daily', 'feed_pet', 5, 'paw_coins', 50, 1),
+('Social Butterfly', 'Add 2 new friends.', 'daily', 'add_friend', 2, 'paw_coins', 100, 1),
+('Generous Gifter', 'Send a gift to a friend.', 'daily', 'send_gift', 1, 'paw_coins', 75, 1),
+('Window Shopper', 'Visit the store page.', 'daily', 'visit_store', 1, 'paw_coins', 20, 1),
+('Play Time', 'Use a toy on any pet 3 times.', 'daily', 'use_toy', 3, 'paw_coins', 60, 1);
+
+-- Insert Default Achievements
+INSERT INTO `achievements` (`achievement_name`, `achievement_description`, `action_type`, `goal_value`, `reward_currency`, `reward_amount`) VALUES
+('First Friend', 'Make your first friend.', 'add_friend', 1, 'gems', 10),
+('Pet Owner', 'Own your first pet.', 'own_pet', 1, 'gems', 10),
+('Kind Soul', 'Feed another user\'s pet for the first time.', 'feed_pet_other', 1, 'gems', 5),
+('Top Dog', 'Own 10 pets.', 'own_pet', 10, 'gems', 50),
+('Gifting Guru', 'Send a total of 50 gifts.', 'send_gift', 50, 'gems', 100);

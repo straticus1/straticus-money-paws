@@ -551,7 +551,3 @@ class DesktopGamingManager {
     }
 }
 
-// Initialize gaming manager
-document.addEventListener('DOMContentLoaded', () => {
-    window.gamingManager = new DesktopGamingManager();
-});

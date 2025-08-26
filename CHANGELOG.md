@@ -6,6 +6,99 @@ All notable changes to Money Paws will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2025-01-01
+
+### 🚀 MAJOR RELEASE: Enhanced Gaming & Social Platform
+
+This is a major release that transforms Money Paws from a simple pet platform into a comprehensive crypto-powered virtual pet ecosystem with advanced gaming, social, and breeding features.
+
+#### 🎮 New Gaming Systems
+- **Pet Adventures & Quests**: Complete immersive quest system with story-driven adventures, dungeon exploration, and boss battles
+- **Pet Genetics & Breeding**: Advanced DNA inheritance system with mutations, rare traits, and genetic algorithms
+- **Achievement System**: Comprehensive achievements with progress tracking, rewards, and leaderboards
+- **Player Marketplace**: Peer-to-peer trading system for pets, items, and rare collectibles
+
+#### 🧬 Advanced Pet Features
+- **Pet Personalities**: Dynamic personality system affecting behavior, preferences, and interactions
+- **Veterinary System**: Complete healthcare management with veterinary visits, treatments, and medical history
+- **Enhanced Pet Statistics**: Expanded stat tracking including genetics, lineage, and breeding history
+- **Pet Adventures**: Send pets on automated adventures with rewards and story progression
+
+#### 💬 Enhanced Social Features  
+- **User Messaging System**: Private messaging between users with conversation threading
+- **Friends & Social Networking**: Add friends, share pets, and build communities
+- **Real-time Notifications**: Live notification system for interactions, messages, and important events
+- **Social Feed**: Activity feed showing friend interactions and community updates
+
+#### 🏖️ Vacation & Delegation
+- **Vacation Mode**: Delegate pet care to trusted users while away
+- **Pet Care Delegation**: Allow others to care for your pets using reserved funds
+- **Abandoned Pet Adoption**: Rescue and adopt neglected pets from inactive users
+
+#### 🔐 Enhanced Security & Authentication
+- **Multi-Factor Authentication (2FA)**: Support for Google Authenticator, SMS, and email verification
+- **Advanced Security Logging**: Comprehensive security event tracking and monitoring
+- **Enhanced Withdrawal Protection**: Multi-method verification for crypto withdrawals
+- **Security Dashboard**: Real-time security status and threat monitoring
+
+#### 💰 Improved Cryptocurrency Integration
+- **Live Price Feeds**: Real-time cryptocurrency prices via CoinGecko API
+- **Enhanced Balance Management**: Multi-currency portfolio tracking with USD conversion
+- **Improved Transaction History**: Detailed transaction logging with categorization
+- **Advanced Payment Processing**: Streamlined crypto payments with better error handling
+
+#### 🖥️ Multi-Platform Support
+- **Desktop Application**: Full-featured Electron desktop client for Windows, macOS, and Linux
+- **Command Line Interface**: CLI tools for advanced users and developers
+- **Progressive Web App**: Enhanced PWA support with offline capabilities
+- **Cross-Platform Synchronization**: Seamless data sync across all platforms
+
+#### ♿ Accessibility Improvements
+- **Screen Reader Support**: Full ARIA labeling and semantic HTML structure
+- **Keyboard Navigation**: Complete keyboard accessibility for all features
+- **High Contrast Mode**: Accessibility-focused visual themes
+- **Voice Commands**: Basic voice control integration for common actions
+
+### Changed
+- **Database Architecture**: Significantly expanded database schema to support new features
+- **API Structure**: RESTful API redesign with improved endpoints and documentation
+- **User Interface**: Modernized UI with improved UX patterns and responsive design
+- **Performance Optimization**: Enhanced caching, database indexing, and asset optimization
+
+### Fixed
+- **Critical Security Issues**: Resolved potential vulnerabilities in crypto price fetching
+- **SMS 2FA Integration**: Complete Twilio integration for production SMS verification
+- **Vacation Mode Validation**: Added proper funds validation for vacation mode reservations
+- **Database Compatibility**: Improved SQLite and MySQL compatibility across all features
+
+### Technical Improvements
+- **Code Architecture**: Modular system design with better separation of concerns
+- **Error Handling**: Comprehensive error handling and user feedback systems
+- **Testing Framework**: Expanded test coverage for critical functionality
+- **Documentation**: Complete API documentation and developer guides
+
+### Migration Notes
+- **Database Migration**: Automatic schema updates for existing installations
+- **Configuration Updates**: New configuration options for social features and 2FA
+- **File Structure**: Reorganized project structure with new directories for features
+
+---
+
+## [2.2.0] - 2025-08-27
+
+### Added
+- **Desktop App Enhancements**: Centralized JavaScript module initialization in the Electron app to improve startup stability and prevent race conditions.
+
+### Changed
+- **Documentation**:
+  - Updated `README.md` with expanded details on desktop application features and a corrected directory structure.
+  - Overhauled `INSTALL.md` to provide comprehensive, step-by-step instructions for configuring and building the desktop client.
+
+### Fixed
+- **Breeding Feature**: Corrected a critical JavaScript typo in `assets/js/breeding.js` that prevented the breeding form from functioning correctly.
+
+---
+
 ## [1.0.0] - 2024-08-24
 
 ### 🎉 Initial Release
@@ -341,6 +434,26 @@ money-paws/
 - **Enhanced Users Table**: Added vacation mode, age verification, and additional fields
 - **Improved Indexing**: Performance optimization for new features
 - **Foreign Key Constraints**: Better data integrity
+
+---
+
+## [2.1.0] - 2025-08-26
+
+### Added
+- **Pet Breeding & Genetics System**
+  - **Breeding Interface**: Added a new `breeding.php` page allowing users to select two of their pets to breed.
+  - **Genetics Engine**: Implemented a backend genetics engine (`includes/genetics.php`) that handles DNA generation, combination, and mutation.
+    - Pets now have a `dna` attribute (50-character string).
+    - Offspring inherit a mix of their parents' DNA.
+    - A configurable mutation rate (1%) introduces new traits.
+  - **Breeding API**: Created `api/breed-pets.php` to handle breeding requests, validate ownership, check cooldowns, and create new pets.
+  - **Breeding Cooldowns**: Implemented a cooldown system to pace the breeding feature (default 24 hours).
+  - **Lineage Tracking**: The `pets` table now tracks `mother_id` and `father_id` to establish pet lineage.
+
+### Changed
+- **Database Schema**:
+  - Added `dna` (TEXT), `mother_id` (INT), and `father_id` (INT) columns to the `pets` table.
+  - Created a new `breeding_cooldowns` table to manage cooldown periods for individual pets.
 
 ---
 

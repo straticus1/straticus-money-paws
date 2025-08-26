@@ -5,6 +5,7 @@
  */
 require_once '../includes/functions.php';
 require_once '../includes/pet_care.php';
+require_once '../includes/quests.php';
 
 header('Content-Type: application/json');
 
@@ -67,6 +68,8 @@ if ($userItem['item_type'] !== 'food') {
 $result = feedPetWithItem($_SESSION['user_id'], $petId, $itemId);
 
 if ($result['success']) {
+    // Update quest progress for feeding a pet
+    update_quest_progress($_SESSION['user_id'], 'feed_pet');
     // Get updated pet stats
     $updatedStats = getPetStats($petId);
     $hungerStatus = getPetHungerStatus($updatedStats['hunger_level']);

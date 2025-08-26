@@ -5,12 +5,16 @@
 
 class DesktopAPIClient {
     constructor() {
-        this.baseURL = 'http://localhost'; // Will be configured based on environment
+        this.baseURL = 'http://localhost'; // This will be configured based on environment
         this.authToken = null;
         this.currentUser = null;
-        this.isDemo = true; // Enable demo mode for testing
-        
-        this.loadStoredAuth();
+        this.isDemo = true; // Default to true until properly initialized
+    }
+
+    async initialize() {
+        this.isDemo = await window.electronAPI.isDev();
+        console.log(`API Client initialized. Demo mode: ${this.isDemo}`);
+        await this.loadStoredAuth();
     }
 
     async loadStoredAuth() {
@@ -471,6 +475,3 @@ class DesktopAPIClient {
 }
 
 // Initialize API client when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.apiClient = new DesktopAPIClient();
-});

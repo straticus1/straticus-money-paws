@@ -19,6 +19,7 @@ Money Paws is a revolutionary cryptocurrency-powered pet platform where users ca
 - **Abandoned Pet Adoption**: Find and adopt pets that haven't been cared for in 30+ days
 - **Vacation Mode**: Delegate pet care to trusted users while away
 - **Leaderboards**: Community rankings for top pets, owners, and active users
+    - **Pet Breeding & Genetics**: Breed your pets to create unique offspring with inherited and mutated traits.
 
 ### 💰 Cryptocurrency Integration
 - **Multi-Crypto Support**: BTC, ETH, USDC, SOL, XRP with real-time pricing
@@ -60,11 +61,13 @@ Money Paws is a revolutionary cryptocurrency-powered pet platform where users ca
 - **Cross-Browser Compatible**: Chrome, Firefox, Safari, Edge
 
 ### 💻 Desktop Application
-- **Electron-Based**: Native desktop app for Windows, macOS, and Linux
-- **Secure Authentication**: Local OAuth integration
-- **Real-time Gaming**: Desktop-optimized crypto gaming
-- **Dark/Light Themes**: Accessibility-focused design
-- **Keyboard Shortcuts**: Full keyboard navigation support
+- **Electron-Based**: Native desktop app for Windows, macOS, and Linux.
+- **Secure Local Storage**: Securely stores session and user data.
+- **Native Notifications**: System-level alerts for in-game events and messages.
+- **Local Image Saving**: Save pet images directly to your computer.
+- **Application Menu**: Standard application menu with settings and shortcuts.
+- **Dark/Light Themes**: User-selectable themes for accessibility.
+- **Full Keyboard Navigation**: Complete control via keyboard shortcuts.
 
 ### 🦶 CLI Client (Accessibility-First)
 - **Screen Reader Support**: Full compatibility with NVDA, JAWS, ORCA
@@ -182,6 +185,7 @@ money-paws/
 │   ├── vacation_mode.php            # Pet care delegation
 │   ├── abandoned_pets.php           # Pet adoption center
 │   ├── leaderboards.php             # Community rankings
+│   ├── breeding.php                 # Pet breeding interface
 │   └── ai-generator.php             # AI pet creation
 │
 ├── Authentication
@@ -208,6 +212,7 @@ money-paws/
 │   ├── treat-pet.php                # Pet treat system
 │   ├── get-notifications.php        # User notifications
 │   ├── get-unread-notification-count.php  # Notification count
+│   ├── breed-pets.php               # Pet breeding endpoint
 │   └── purchase-item.php            # Store purchases
 │
 ├── Administration
@@ -224,6 +229,7 @@ money-paws/
 │   │   ├── pet_care.php             # Pet care mechanics
 │   │   ├── coinbase_commerce.php    # Crypto payment processing
 │   │   ├── crypto.php               # Cryptocurrency utilities
+│   │   ├── genetics.php             # Pet breeding and genetics engine
 │   │   ├── ai_generation.php        # AI integration
 │   │   └── header.php, footer.php   # UI components
 │   │
@@ -240,13 +246,13 @@ money-paws/
 │   │   ├── setup-sqlite.php         # SQLite setup utility
 │   │   ├── install.sh               # CLI installer
 │   │   └── README.md                # CLI documentation
-│   │
-│   └── gui/                         # Desktop applications
+│   └── gui/                         # Desktop & Web GUI
 │       ├── desktop/                 # Electron desktop app
-│       │   ├── main.js              # Electron main process
+│       │   ├── main.js              # Main Electron process
+│       │   ├── preload.js           # Electron context bridge
 │       │   ├── package.json         # Node.js dependencies
-│       │   └── renderer/            # Frontend code
-│       └── web/                     # Web app components
+│       │   └── renderer/            # Frontend code (HTML, CSS, JS)
+│       └── web/                     # Shared web components
 │
 ├── Static Assets
 │   ├── assets/                      # CSS, JS, images
@@ -302,7 +308,7 @@ For support, email info@paws.money or visit our community Discord.
 
 - [ ] Mobile app development
 - [ ] NFT marketplace integration
-- [ ] Advanced AI pet breeding system
+- [x] Advanced AI pet breeding system
 - [ ] Multiplayer gaming tournaments
 - [ ] Social features and pet communities
 - [ ] Integration with more crypto exchanges

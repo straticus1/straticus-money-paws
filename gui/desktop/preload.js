@@ -10,6 +10,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
     // App info
     getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+    isDev: () => ipcRenderer.invoke('is-dev'),
     
     // Store operations
     getStoreValue: (key) => ipcRenderer.invoke('get-store-value', key),
@@ -19,15 +20,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     apiRequest: (method, endpoint, data, headers) => 
         ipcRenderer.invoke('api-request', method, endpoint, data, headers),
     
+    // Notifications
+    showNotification: (options) => ipcRenderer.invoke('show-notification', options),
+
     // Dialog operations
     showMessageBox: (options) => ipcRenderer.invoke('show-message-box', options),
     showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
     showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
     
     // Event listeners
-    onShowSettings: (callback) => {
-        ipcRenderer.on('show-settings', callback);
-    },
+    showImageContextMenu: (imageUrl) => ipcRenderer.send('show-image-context-menu', imageUrl),
+    onShowSettings: (callback) => ipcRenderer.on('show-settings', callback),
     
     // Remove listeners
     removeAllListeners: (channel) => {

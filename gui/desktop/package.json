@@ -1,6 +1,6 @@
 {
   "name": "money-paws-desktop",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Money Paws Desktop - Multi-platform cryptocurrency-powered pet platform with accessibility support. Developed and Designed by Ryan Coleman. <coleman.ryan@gmail.com>",
   "main": "main.js",
   "scripts": {

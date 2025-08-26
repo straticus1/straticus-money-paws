@@ -8,11 +8,16 @@ require_once 'coinbase_commerce.php';
 
 // Coinbase integration functions
 function getCryptoPrice($cryptoType) {
-    // TODO: Re-implement live price fetching from a reliable API
-    // The previous implementation was using a deprecated and broken API call.
-
-    // Fallback mock rates
-    $mockRates = [
+// Use CoinGecko API for live prices with fallback to cached/mock data
+    $cryptoMap = [
+        'BTC' => 'bitcoin',
+        'ETH' => 'ethereum', 
+        'USDC' => 'usd-coin',
+        'SOL' => 'solana',
+        'XRP' => 'ripple'
+    ];
+    
+    $fallbackRates = [
         'BTC' => 45000.00,
         'ETH' => 3000.00,
         'USDC' => 1.00,
@@ -20,43 +25,55 @@ function getCryptoPrice($cryptoType) {
         'XRP' => 0.50
     ];
     
-    return $mockRates[$cryptoType] ?? 1.00;
+    if (!isset($cryptoMap[$cryptoType])) {
+        return $fallbackRates[$cryptoType] ?? 1.00;
+    }
+    
+    $coinId = $cryptoMap[$cryptoType];
+    
+    // Try to get live price from CoinGecko
+    try {
+        $url = "https://api.coingecko.com/api/v3/simple/price?ids={$coinId}&vs_currencies=usd";
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 5, // 5 second timeout
+                'header' => 'User-Agent: MoneyPaws/3.0.0'
+            ]
+        ]);
+        
+        $response = @file_get_contents($url, false, $context);
+        if ($response !== false) {
+            $data = json_decode($response, true);
+            if (isset($data[$coinId]['usd'])) {
+                return (float) $data[$coinId]['usd'];
+            }
+        }
+    } catch (Exception $e) {
+        error_log("CoinGecko API error: " . $e->getMessage());
+    }
+    
+    // Fallback to mock rates if API fails
+    return $fallbackRates[$cryptoType] ?? 1.00;
 }
 
 function convertUSDToCrypto($usdAmount, $cryptoType) {
-    // This would typically call a real crypto price API
-    // For demo purposes, using mock exchange rates
-    $mockRates = [
-        'BTC' => 45000.00,
-        'ETH' => 3000.00,
-        'USDC' => 1.00,
-        'SOL' => 100.00,
-        'XRP' => 0.50
-    ];
+    $price = getCryptoPrice($cryptoType);
     
-    if (!isset($mockRates[$cryptoType])) {
+    if ($price === null || $price <= 0) {
         return null;
     }
     
-    return $usdAmount / $mockRates[$cryptoType];
+    return $usdAmount / $price;
 }
 
 function convertCryptoToUSD($cryptoAmount, $cryptoType) {
-    // This would typically call a real crypto price API
-    // For demo purposes, using mock exchange rates
-    $mockRates = [
-        'BTC' => 45000.00,
-        'ETH' => 3000.00,
-        'USDC' => 1.00,
-        'SOL' => 100.00,
-        'XRP' => 0.50
-    ];
+    $price = getCryptoPrice($cryptoType);
     
-    if (!isset($mockRates[$cryptoType])) {
+    if ($price === null || $price <= 0) {
         return null;
     }
     
-    return $cryptoAmount * $mockRates[$cryptoType];
+    return $cryptoAmount * $price;
 }
 
 

@@ -5,6 +5,8 @@
  */
 require_once '../includes/functions.php';
 require_once '../includes/pet_care.php';
+require_once '../includes/quests.php';
+require_once '../includes/personalities.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -79,6 +81,35 @@ try {
     $result = useItemOnPet($_SESSION['user_id'], $petId, $itemId, $targetType);
     
     if ($result['success']) {
+        // Update quest progress if the item used was a toy
+        if ($inventoryItem && $inventoryItem['item_type'] === 'toy') {
+                        update_quest_progress($_SESSION['user_id'], 'use_toy');
+        }
+
+        // Update pet personality based on item type
+        if ($inventoryItem) {
+            switch ($inventoryItem['item_type']) {
+                case 'food':
+                    updatePetPersonality($petId, 'greed', 5);
+                    updatePetPersonality($petId, 'friendliness', 2);
+                    break;
+                case 'treat':
+                    updatePetPersonality($petId, 'greed', 8);
+                    updatePetPersonality($petId, 'friendliness', 4);
+                    break;
+                case 'toy':
+                    updatePetPersonality($petId, 'laziness', -5);
+                    updatePetPersonality($petId, 'friendliness', 5);
+                    updatePetPersonality($petId, 'bravery', 1);
+                    break;
+            }
+        }
+
+        // Occasionally generate a personality-based message
+        if (rand(1, 5) === 1) { // 20% chance
+            generatePersonalityMessage($petId, $pet['user_id']);
+        }
+
         echo json_encode([
             'success' => true,
             'message' => $result['message'],

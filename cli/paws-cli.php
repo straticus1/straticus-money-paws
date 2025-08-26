@@ -9,7 +9,7 @@
  */
 
 // Configuration
-define('CLI_VERSION', '2.0.0');
+define('CLI_VERSION', '3.0.0');
 define('API_BASE_URL', 'https://paws.money/api/');
 define('CONFIG_FILE', __DIR__ . '/config.json');
 define('SESSION_FILE', __DIR__ . '/session.json');

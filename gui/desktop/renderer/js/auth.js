@@ -55,12 +55,6 @@ class DesktopAuthManager {
             this.handleLogout();
         });
 
-        // Listen for settings show event from main process
-        window.electronAPI.onShowSettings(() => {
-            if (window.app) {
-                window.app.showView('settings');
-            }
-        });
     }
 
     switchTab(tab) {
@@ -458,14 +452,3 @@ class DesktopAuthManager {
     }
 }
 
-// Initialize authentication when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.authManager = new DesktopAuthManager();
-    window.authManager.setupSessionMonitoring();
-    window.authManager.setupKeyboardShortcuts();
-    
-    // Show demo notification if in demo mode
-    setTimeout(() => {
-        window.authManager.showDemoNotification();
-    }, 2000);
-});

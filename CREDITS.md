@@ -26,6 +26,9 @@ Money Paws is built with the help of these amazing open-source libraries and ser
 - **Electron**: Cross-platform desktop application framework.
 - **Node.js**: JavaScript runtime for desktop application.
 - **Axios**: HTTP client for API communications in desktop app.
+- **Electron Builder**: For building and packaging the desktop application.
+- **Electron Store**: For managing local user settings and data.
+- **Electron Updater**: For enabling automatic application updates.
 
 ### APIs & Services
 - **Coinbase Commerce API**: For handling all cryptocurrency transactions.

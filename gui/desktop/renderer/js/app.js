@@ -74,6 +74,10 @@ class DesktopMoneyPawsApp {
             this.toggleAnimations(e.target.checked);
         });
 
+        document.getElementById('notifications-toggle').addEventListener('change', (e) => {
+            this.toggleNotifications(e.target.checked);
+        });
+
         // Profile form
         document.getElementById('profile-form').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -108,6 +112,11 @@ class DesktopMoneyPawsApp {
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             this.handleGlobalKeyboardShortcuts(e);
+        });
+
+        // Listen for menu events
+        window.electronAPI.onShowSettings(() => {
+            this.showView('settings');
         });
     }
 
@@ -235,11 +244,19 @@ class DesktopMoneyPawsApp {
 
     async loadSettings() {
         try {
+            // Load remote settings from API
             const response = await this.apiClient.getSettings();
             if (response.success) {
                 this.settings = response.settings;
-                this.applySettings();
             }
+
+            // Load local desktop-specific settings
+            const desktopSettings = await window.electronAPI.getStoreValue('desktopSettings');
+            if (desktopSettings) {
+                this.settings = { ...this.settings, ...desktopSettings };
+            }
+
+            this.applySettings();
         } catch (error) {
             console.error('Failed to load settings:', error);
         }
@@ -259,6 +276,7 @@ class DesktopMoneyPawsApp {
         document.getElementById('theme-toggle').checked = this.settings.theme === 'dark';
         document.getElementById('sound-toggle').checked = this.settings.soundEnabled !== false;
         document.getElementById('animations-toggle').checked = this.settings.animationsEnabled !== false;
+        document.getElementById('notifications-toggle').checked = this.settings.notificationsEnabled !== false;
     }
 
     async saveSettings() {
@@ -575,6 +593,14 @@ class DesktopMoneyPawsApp {
         this.saveSettings();
     }
 
+    toggleNotifications(enabled) {
+        this.settings.notificationsEnabled = enabled;
+        // Save desktop-specific settings locally
+        window.electronAPI.setStoreValue('desktopSettings', {
+            notificationsEnabled: this.settings.notificationsEnabled
+        });
+    }
+
     async updateAppVersion() {
         try {
             const version = await window.electronAPI.getAppVersion();
@@ -720,6 +746,25 @@ style.textContent = `
 document.head.appendChild(style);
 
 // Initialize app when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Initialize API Client
+    window.apiClient = new DesktopAPIClient();
+    await window.apiClient.initialize();
+
+    // 2. Initialize Auth Manager
+    window.authManager = new DesktopAuthManager();
+    window.authManager.setupSessionMonitoring();
+    window.authManager.setupKeyboardShortcuts();
+
+    // 3. Initialize Gaming Manager
+    window.gamingManager = new DesktopGamingManager();
+
+    // 4. Initialize Main App
     window.app = new DesktopMoneyPawsApp();
+    // The authManager will check auth status and call app.initialize() if logged in.
+
+    // 5. Show demo notification if in demo mode
+    setTimeout(() => {
+        window.authManager.showDemoNotification();
+    }, 2000);
 });

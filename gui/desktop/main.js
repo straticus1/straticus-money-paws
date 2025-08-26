@@ -3,10 +3,11 @@
  * Developed and Designed by Ryan Coleman. <coleman.ryan@gmail.com>
  */
 
-const { app, BrowserWindow, Menu, ipcMain, shell, dialog } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, shell, dialog, Notification } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const Store = require('electron-store');
 const path = require('path');
+const fs = require('fs');
 const axios = require('axios');
 
 // Initialize store for app settings
@@ -209,6 +210,13 @@ function createMenu() {
                     click: () => {
                         shell.openExternal('https://github.com/ryancoleman/money-paws/issues');
                     }
+                },
+                { type: 'separator' },
+                {
+                    label: 'Check for Updates',
+                    click: () => {
+                        autoUpdater.checkForUpdatesAndNotify();
+                    }
                 }
             ]
         }
@@ -238,6 +246,10 @@ function createMenu() {
 // IPC handlers
 ipcMain.handle('get-app-version', () => {
     return app.getVersion();
+});
+
+ipcMain.handle('is-dev', () => {
+    return isDev;
 });
 
 ipcMain.handle('get-store-value', (event, key) => {
@@ -294,14 +306,69 @@ ipcMain.handle('show-open-dialog', async (event, options) => {
     return result;
 });
 
+ipcMain.on('show-image-context-menu', (event, imageUrl) => {
+    const template = [
+        {
+            label: 'Save Image As...',
+            click: async () => {
+                const defaultFileName = path.basename(new URL(imageUrl, API_BASE_URL).pathname) || 'pet.png';
+                const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+                    title: 'Save Pet Image',
+                    defaultPath: defaultFileName,
+                    filters: [
+                        { name: 'PNG Image', extensions: ['png'] },
+                        { name: 'JPEG Image', extensions: ['jpg', 'jpeg'] },
+                    ]
+                });
+
+                if (canceled || !filePath) {
+                    return;
+                }
+
+                try {
+                    const absoluteUrl = new URL(imageUrl, API_BASE_URL).href;
+                    const response = await axios({ url: absoluteUrl, method: 'GET', responseType: 'stream' });
+                    const writer = fs.createWriteStream(filePath);
+                    response.data.pipe(writer);
+
+                    writer.on('finish', () => {
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'info',
+                            title: 'Download Complete',
+                            message: `Image saved to ${filePath}`
+                        });
+                    });
+
+                    writer.on('error', (error) => {
+                        fs.unlink(filePath, () => {}); // Clean up failed download
+                        dialog.showErrorBox('Download Failed', `Could not save the image: ${error.message}`);
+                    });
+                } catch (error) {
+                    console.error('Failed to download image:', error);
+                    dialog.showErrorBox('Download Failed', 'Could not download the pet image. Please check the console for more details.');
+                }
+            }
+        }
+    ];
+    const menu = Menu.buildFromTemplate(template);
+    menu.popup(BrowserWindow.fromWebContents(event.sender));
+});
+
+ipcMain.handle('show-notification', async (event, options) => {
+    if (Notification.isSupported()) {
+        new Notification({
+            title: options.title,
+            body: options.body,
+            icon: path.join(__dirname, 'renderer/assets/icon.png')
+        }).show();
+    }
+});
+
 // App event handlers
 app.whenReady().then(() => {
     createSplashWindow();
-    
-    setTimeout(() => {
-        createMainWindow();
-        createMenu();
-    }, 2000);
+    createMainWindow();
+    createMenu();
 
     // Handle app activation (macOS)
     app.on('activate', () => {
