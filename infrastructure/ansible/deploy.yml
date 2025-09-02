@@ -1,0 +1,115 @@
+---
+# Money Paws Deployment Playbook
+# Developed and Designed by Ryan Coleman. <coleman.ryan@gmail.com>
+
+- name: Deploy Money Paws Application
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  vars:
+    app_name: "money-paws"
+    environments:
+      dev:
+        cluster_name: "money-paws-dev"
+        service_name: "money-paws-dev"
+        desired_count: 1
+        ecr_repository: "{{ app_name }}-dev"
+      staging:
+        cluster_name: "money-paws-staging"
+        service_name: "money-paws-staging"
+        desired_count: 2
+        ecr_repository: "{{ app_name }}-staging"
+      production:
+        cluster_name: "money-paws-production"
+        service_name: "money-paws-production"
+        desired_count: 3
+        ecr_repository: "{{ app_name }}-production"
+    
+    # Version management
+    version_config_file: "../../version.json"
+    rollback_enabled: true
+    health_check_retries: 10
+    health_check_delay: 30
+
+  tasks:
+    - name: Load version configuration
+      include_vars: "{{ version_config_file }}"
+      tags: [version, always]
+
+    - name: Validate target environment
+      fail:
+        msg: "Environment '{{ target_env }}' is not supported. Use dev, staging, or production."
+      when: target_env not in ['dev', 'staging', 'production']
+      tags: [validation]
+
+    - name: Get current deployed version
+      shell: |
+        aws ecs describe-services \
+          --cluster {{ environments[target_env].cluster_name }} \
+          --services {{ environments[target_env].service_name }} \
+          --query 'services[0].taskDefinition' \
+          --output text | grep -o 'v[0-9]\+\.[0-9]\+\.[0-9]\+' || echo "none"
+      register: current_version_result
+      changed_when: false
+      tags: [version]
+
+    - name: Set current version fact
+      set_fact:
+        current_deployed_version: "{{ current_version_result.stdout | default('none') }}"
+      tags: [version]
+
+    - name: Display version information
+      debug:
+        msg: |
+          Target Environment: {{ target_env }}
+          Current Version: {{ current_deployed_version }}
+          Target Version: {{ deploy_version | default(versions[environments[target_env].current_version].name) }}
+          Breaking Changes: {{ versions[deploy_version | default(current_version)].breaking_changes | default(false) }}
+      tags: [version]
+
+    - name: Build and push Docker image
+      include_tasks: tasks/build_and_push.yml
+      tags: [build]
+
+    - name: Run database migrations
+      include_tasks: tasks/database_migration.yml
+      when: versions[deploy_version | default(current_version)].requires_migration | default(false)
+      tags: [migration]
+
+    - name: Deploy to ECS
+      include_tasks: tasks/ecs_deploy.yml
+      tags: [deploy]
+
+    - name: Run health checks
+      include_tasks: tasks/health_check.yml
+      tags: [health_check]
+
+    - name: Update version tracking
+      include_tasks: tasks/update_version.yml
+      tags: [version]
+
+    - name: Setup monitoring alerts
+      include_tasks: tasks/monitoring.yml
+      tags: [monitoring]
+
+    - name: Send deployment notification
+      include_tasks: tasks/notification.yml
+      tags: [notification]
+
+  handlers:
+    - name: Rollback deployment
+      include_tasks: tasks/rollback.yml
+      listen: "deployment_failed"
+
+    - name: Alert development team
+      slack:
+        token: "{{ slack_token }}"
+        msg: |
+          🚨 Money Paws Deployment Failed
+          Environment: {{ target_env }}
+          Version: {{ deploy_version }}
+          Time: {{ ansible_date_time.iso8601 }}
+        channel: "#deployments"
+      listen: "deployment_failed"
+      when: slack_token is defined

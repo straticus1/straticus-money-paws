@@ -1,0 +1,223 @@
+---
+# ECS Deployment with Blue-Green Strategy
+- name: Get current task definition
+  shell: |
+    aws ecs describe-task-definition \
+      --task-definition {{ environments[target_env].cluster_name }} \
+      --query 'taskDefinition' \
+      --output json
+  register: current_task_definition
+  changed_when: false
+
+- name: Create new task definition revision
+  shell: |
+    cat << 'EOF' > /tmp/task-definition.json
+    {
+      "family": "{{ environments[target_env].service_name }}",
+      "networkMode": "awsvpc",
+      "requiresCompatibilities": ["FARGATE"],
+      "cpu": "{{ task_cpu | default('512') }}",
+      "memory": "{{ task_memory | default('1024') }}",
+      "executionRoleArn": "{{ task_execution_role_arn }}",
+      "taskRoleArn": "{{ task_role_arn }}",
+      "containerDefinitions": [
+        {
+          "name": "app",
+          "image": "{{ ecr_repository_url }}:{{ deploy_version }}",
+          "portMappings": [
+            {
+              "containerPort": 80,
+              "protocol": "tcp"
+            }
+          ],
+          "environment": [
+            {
+              "name": "APP_ENV",
+              "value": "{{ target_env }}"
+            },
+            {
+              "name": "APP_VERSION",
+              "value": "{{ deploy_version }}"
+            },
+            {
+              "name": "DB_HOST",
+              "value": "{{ db_host }}"
+            },
+            {
+              "name": "REDIS_HOST",
+              "value": "{{ redis_host }}"
+            }
+          ],
+          "secrets": [
+            {
+              "name": "DB_PASSWORD",
+              "valueFrom": "{{ db_password_arn }}"
+            }
+          ],
+          "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+              "awslogs-group": "/ecs/{{ environments[target_env].service_name }}",
+              "awslogs-region": "{{ aws_region }}",
+              "awslogs-stream-prefix": "ecs"
+            }
+          },
+          "healthCheck": {
+            "command": ["CMD-SHELL", "curl -f http://localhost/api/health || exit 1"],
+            "interval": 30,
+            "timeout": 5,
+            "retries": 3,
+            "startPeriod": 60
+          }
+        }
+      ]
+    }
+    EOF
+    
+    aws ecs register-task-definition \
+      --cli-input-json file:///tmp/task-definition.json \
+      --query 'taskDefinition.taskDefinitionArn' \
+      --output text
+  register: new_task_definition_arn
+
+- name: Blue-Green Deployment Strategy
+  block:
+    - name: Check if blue-green is enabled for this environment
+      set_fact:
+        use_blue_green: "{{ environments[target_env].blue_green | default(false) or target_env == 'production' }}"
+
+    - name: Standard deployment (non-production)
+      block:
+        - name: Update ECS service with new task definition
+          shell: |
+            aws ecs update-service \
+              --cluster {{ environments[target_env].cluster_name }} \
+              --service {{ environments[target_env].service_name }} \
+              --task-definition {{ new_task_definition_arn.stdout }} \
+              --desired-count {{ environments[target_env].desired_count }} \
+              --deployment-configuration maximumPercent=200,minimumHealthyPercent=50
+          
+        - name: Wait for deployment to complete
+          shell: |
+            aws ecs wait services-stable \
+              --cluster {{ environments[target_env].cluster_name }} \
+              --services {{ environments[target_env].service_name }}
+          timeout: 1800  # 30 minutes
+
+        - name: Verify deployment success
+          shell: |
+            aws ecs describe-services \
+              --cluster {{ environments[target_env].cluster_name }} \
+              --services {{ environments[target_env].service_name }} \
+              --query 'services[0].deployments[?status==`PRIMARY`].runningCount' \
+              --output text
+          register: running_count
+          
+        - name: Check if desired count matches running count
+          fail:
+            msg: "Deployment failed: Expected {{ environments[target_env].desired_count }} tasks, but only {{ running_count.stdout }} are running"
+          when: running_count.stdout|int != environments[target_env].desired_count|int
+
+      when: not use_blue_green
+
+    - name: Blue-Green deployment (production)
+      block:
+        - name: Create temporary green service
+          shell: |
+            aws ecs create-service \
+              --cluster {{ environments[target_env].cluster_name }} \
+              --service-name {{ environments[target_env].service_name }}-green \
+              --task-definition {{ new_task_definition_arn.stdout }} \
+              --desired-count {{ environments[target_env].desired_count }} \
+              --network-configuration "awsvpcConfiguration={subnets=[{{ private_subnets | join(',') }}],securityGroups=[{{ security_group_id }}],assignPublicIp=DISABLED}" \
+              --load-balancers targetGroupArn={{ green_target_group_arn }},containerName=app,containerPort=80
+
+        - name: Wait for green service to be stable
+          shell: |
+            aws ecs wait services-stable \
+              --cluster {{ environments[target_env].cluster_name }} \
+              --services {{ environments[target_env].service_name }}-green
+          timeout: 1800
+
+        - name: Run health checks on green environment
+          uri:
+            url: "{{ green_environment_url }}/api/health"
+            method: GET
+            status_code: 200
+          register: green_health_check
+          retries: 5
+          delay: 10
+
+        - name: Switch traffic to green environment
+          shell: |
+            aws elbv2 modify-listener \
+              --listener-arn {{ production_listener_arn }} \
+              --default-actions Type=forward,TargetGroupArn={{ green_target_group_arn }}
+
+        - name: Wait for traffic switch confirmation
+          pause:
+            seconds: 30
+
+        - name: Verify production health after traffic switch
+          uri:
+            url: "{{ production_url }}/api/health"
+            method: GET
+            status_code: 200
+          retries: 3
+          delay: 10
+
+        - name: Scale down and remove blue service
+          shell: |
+            aws ecs update-service \
+              --cluster {{ environments[target_env].cluster_name }} \
+              --service {{ environments[target_env].service_name }} \
+              --desired-count 0
+            
+            sleep 60
+            
+            aws ecs delete-service \
+              --cluster {{ environments[target_env].cluster_name }} \
+              --service {{ environments[target_env].service_name }}
+
+        - name: Rename green service to primary
+          shell: |
+            # This would require additional logic to rename the service
+            # For now, we'll keep the green service as the new primary
+            echo "Green service is now serving production traffic"
+
+      when: use_blue_green
+
+  rescue:
+    - name: Deployment failed - trigger rollback
+      debug:
+        msg: "Deployment failed, triggering rollback procedures"
+      notify: deployment_failed
+
+    - name: Log deployment failure details
+      shell: |
+        aws logs create-log-stream \
+          --log-group-name "/aws/ecs/deployment-failures" \
+          --log-stream-name "{{ target_env }}-{{ deploy_version }}-{{ ansible_date_time.epoch }}" || true
+        
+        aws logs put-log-events \
+          --log-group-name "/aws/ecs/deployment-failures" \
+          --log-stream-name "{{ target_env }}-{{ deploy_version }}-{{ ansible_date_time.epoch }}" \
+          --log-events timestamp={{ ansible_date_time.epoch }}000,message="Deployment failed for {{ target_env }} version {{ deploy_version }}"
+
+    - name: Clean up failed green service (if blue-green deployment)
+      shell: |
+        aws ecs update-service \
+          --cluster {{ environments[target_env].cluster_name }} \
+          --service {{ environments[target_env].service_name }}-green \
+          --desired-count 0 || true
+        
+        sleep 60
+        
+        aws ecs delete-service \
+          --cluster {{ environments[target_env].cluster_name }} \
+          --service {{ environments[target_env].service_name }}-green || true
+      when: use_blue_green | default(false)
+
+    - name: Fail the deployment
+      fail:
+        msg: "ECS deployment failed and rollback has been initiated"

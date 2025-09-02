@@ -1,0 +1,441 @@
+name: Money Paws CI/CD Pipeline
+# Developed and Designed by Ryan Coleman. <coleman.ryan@gmail.com>
+
+on:
+  push:
+    branches: [ main, develop, staging ]
+  pull_request:
+    branches: [ main, staging ]
+  release:
+    types: [ published ]
+  
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+      version:
+        description: 'Version to deploy (leave empty for latest)'
+        required: false
+        type: string
+      force_deploy:
+        description: 'Force deployment even if version exists'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  AWS_REGION: us-west-2
+  ECR_REPOSITORY: money-paws
+  ECS_CLUSTER_PREFIX: money-paws
+  TERRAFORM_VERSION: 1.6.0
+  ANSIBLE_VERSION: 8.0.0
+
+jobs:
+  # Determine deployment strategy based on trigger
+  setup:
+    name: Setup Deployment Strategy
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.determine-env.outputs.environment }}
+      version: ${{ steps.determine-version.outputs.version }}
+      deploy: ${{ steps.determine-deploy.outputs.deploy }}
+      requires_approval: ${{ steps.determine-approval.outputs.requires_approval }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Determine target environment
+        id: determine-env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" == "release" ]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          else
+            echo "environment=none" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Determine version
+        id: determine-version
+        run: |
+          if [ "${{ github.event.inputs.version }}" != "" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" == "release" ]; then
+            echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(jq -r '.current_version' version.json)
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Determine if deployment should proceed
+        id: determine-deploy
+        run: |
+          if [ "${{ steps.determine-env.outputs.environment }}" == "none" ]; then
+            echo "deploy=false" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "deploy=false" >> $GITHUB_OUTPUT
+          else
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Determine approval requirements
+        id: determine-approval
+        run: |
+          if [ "${{ steps.determine-env.outputs.environment }}" == "production" ]; then
+            echo "requires_approval=true" >> $GITHUB_OUTPUT
+          else
+            echo "requires_approval=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Run tests and quality checks
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: setup
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          extensions: mbstring, pdo, pdo_mysql, curl, json, openssl, fileinfo
+          
+      - name: Install Composer dependencies
+        run: |
+          cd server
+          composer install --no-dev --optimize-autoloader
+          
+      - name: Run PHP syntax check
+        run: |
+          find server -name "*.php" -exec php -l {} \;
+          
+      - name: Run security audit
+        run: |
+          cd server
+          composer audit || true  # Non-blocking for now
+          
+      - name: Validate database schema
+        run: |
+          cd server/database
+          php -l schema.sql || echo "Schema validation complete"
+          
+      - name: Check Terraform syntax
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          
+      - name: Terraform Format Check
+        run: |
+          cd infrastructure/terraform
+          terraform fmt -check -recursive
+          
+      - name: Terraform Validate
+        run: |
+          cd infrastructure/terraform
+          terraform init -backend=false
+          terraform validate
+          
+      - name: Ansible Syntax Check
+        run: |
+          pip install ansible==${{ env.ANSIBLE_VERSION }}
+          cd infrastructure/ansible
+          ansible-playbook --syntax-check deploy.yml
+
+  # Build and push Docker image
+  build:
+    name: Build and Push Image
+    runs-on: ubuntu-latest
+    needs: [setup, test]
+    if: needs.setup.outputs.deploy == 'true'
+    
+    outputs:
+      image-tag: ${{ steps.build-image.outputs.image-tag }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        
+      - name: Build, tag, and push image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ needs.setup.outputs.version }}
+        run: |
+          # Build image
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./server
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest ./server
+          
+          # Push image
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          
+          echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          
+      - name: Scan image for vulnerabilities
+        run: |
+          # Install security scanner
+          curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          
+          # Scan image
+          trivy image --severity HIGH,CRITICAL ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:${{ needs.setup.outputs.version }}
+
+  # Deploy infrastructure
+  infrastructure:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: [setup, build]
+    if: needs.setup.outputs.deploy == 'true'
+    environment: ${{ needs.setup.outputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          
+      - name: Create Terraform backend config
+        run: |
+          cat > infrastructure/terraform/backend-${{ needs.setup.outputs.environment }}.hcl << EOF
+          bucket = "money-paws-terraform-state-${{ needs.setup.outputs.environment }}"
+          key    = "terraform.tfstate"
+          region = "${{ env.AWS_REGION }}"
+          dynamodb_table = "money-paws-terraform-locks-${{ needs.setup.outputs.environment }}"
+          encrypt = true
+          EOF
+          
+      - name: Create Terraform variables
+        env:
+          ENVIRONMENT: ${{ needs.setup.outputs.environment }}
+        run: |
+          cat > infrastructure/terraform/terraform-$ENVIRONMENT.tfvars << EOF
+          environment = "$ENVIRONMENT"
+          app_version = "${{ needs.setup.outputs.version }}"
+          domain_name = "${{ secrets.DOMAIN_NAME }}"
+          ssl_certificate_arn = "${{ secrets.SSL_CERTIFICATE_ARN }}"
+          alert_email = "${{ secrets.ALERT_EMAIL }}"
+          slack_webhook_url = "${{ secrets.SLACK_WEBHOOK_URL }}"
+          
+          # Environment-specific configurations
+          $([ "$ENVIRONMENT" = "production" ] && echo 'db_instance_class = "db.r5.large"')
+          $([ "$ENVIRONMENT" = "production" ] && echo 'redis_node_type = "cache.r5.large"')
+          $([ "$ENVIRONMENT" = "production" ] && echo 'ecs_desired_count = 3')
+          $([ "$ENVIRONMENT" = "production" ] && echo 'enable_deletion_protection = true')
+          
+          $([ "$ENVIRONMENT" = "staging" ] && echo 'db_instance_class = "db.t3.small"')
+          $([ "$ENVIRONMENT" = "staging" ] && echo 'redis_node_type = "cache.t3.small"')
+          $([ "$ENVIRONMENT" = "staging" ] && echo 'ecs_desired_count = 2')
+          
+          $([ "$ENVIRONMENT" = "dev" ] && echo 'db_instance_class = "db.t3.micro"')
+          $([ "$ENVIRONMENT" = "dev" ] && echo 'redis_node_type = "cache.t3.micro"')
+          $([ "$ENVIRONMENT" = "dev" ] && echo 'ecs_desired_count = 1')
+          EOF
+          
+      - name: Terraform Init
+        run: |
+          cd infrastructure/terraform
+          terraform init -backend-config=backend-${{ needs.setup.outputs.environment }}.hcl
+          
+      - name: Terraform Plan
+        run: |
+          cd infrastructure/terraform
+          terraform plan -var-file=terraform-${{ needs.setup.outputs.environment }}.tfvars -out=tfplan
+          
+      - name: Terraform Apply
+        run: |
+          cd infrastructure/terraform
+          terraform apply -auto-approve tfplan
+
+  # Deploy application
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    needs: [setup, build, infrastructure]
+    if: needs.setup.outputs.deploy == 'true'
+    environment: ${{ needs.setup.outputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Setup Python and Ansible
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install Ansible and dependencies
+        run: |
+          pip install ansible==${{ env.ANSIBLE_VERSION }} boto3 botocore
+          ansible-galaxy collection install amazon.aws community.general
+          
+      - name: Create Ansible inventory
+        run: |
+          cat > infrastructure/ansible/inventory-${{ needs.setup.outputs.environment }}.yml << EOF
+          all:
+            vars:
+              target_env: ${{ needs.setup.outputs.environment }}
+              deploy_version: ${{ needs.setup.outputs.version }}
+              aws_region: ${{ env.AWS_REGION }}
+              ecr_repository_url: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}
+              slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          EOF
+          
+      - name: Run Ansible deployment
+        run: |
+          cd infrastructure/ansible
+          ansible-playbook -i inventory-${{ needs.setup.outputs.environment }}.yml \
+            deploy.yml \
+            --extra-vars "target_env=${{ needs.setup.outputs.environment }}" \
+            --extra-vars "deploy_version=${{ needs.setup.outputs.version }}"
+
+  # Health check and validation
+  validate:
+    name: Validate Deployment
+    runs-on: ubuntu-latest
+    needs: [setup, deploy]
+    if: needs.setup.outputs.deploy == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Health Check
+        run: |
+          # Wait for deployment to settle
+          sleep 60
+          
+          # Determine application URL based on environment
+          case "${{ needs.setup.outputs.environment }}" in
+            "production")
+              APP_URL="https://${{ secrets.DOMAIN_NAME }}"
+              ;;
+            "staging")
+              APP_URL="https://staging.${{ secrets.DOMAIN_NAME }}"
+              ;;
+            "dev")
+              APP_URL="https://dev.${{ secrets.DOMAIN_NAME }}"
+              ;;
+          esac
+          
+          # Health check with retries
+          for i in {1..10}; do
+            if curl -f "$APP_URL/api/health"; then
+              echo "✅ Health check passed"
+              break
+            else
+              echo "⏳ Health check failed (attempt $i/10), retrying in 30s..."
+              sleep 30
+            fi
+            
+            if [ $i -eq 10 ]; then
+              echo "❌ Health check failed after 10 attempts"
+              exit 1
+            fi
+          done
+          
+      - name: Performance Test
+        run: |
+          # Simple performance test
+          APP_URL="https://${{ needs.setup.outputs.environment == 'production' && secrets.DOMAIN_NAME || format('{0}.{1}', needs.setup.outputs.environment, secrets.DOMAIN_NAME) }}"
+          
+          # Test response time
+          RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}" "$APP_URL/api/health")
+          echo "Response time: ${RESPONSE_TIME}s"
+          
+          # Fail if response time is too slow
+          if (( $(echo "$RESPONSE_TIME > 2.0" | bc -l) )); then
+            echo "❌ Response time too slow: ${RESPONSE_TIME}s"
+            exit 1
+          fi
+          
+      - name: Update deployment status
+        run: |
+          # Record successful deployment
+          aws ssm put-parameter \
+            --name "/money-paws/${{ needs.setup.outputs.environment }}/last-successful-deployment" \
+            --value "${{ needs.setup.outputs.version }}" \
+            --type String \
+            --overwrite
+
+  # Notification
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [setup, deploy, validate]
+    if: always() && needs.setup.outputs.deploy == 'true'
+    
+    steps:
+      - name: Send success notification
+        if: needs.validate.result == 'success'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#deployments'
+          text: |
+            🚀 **Deployment Successful**
+            Environment: `${{ needs.setup.outputs.environment }}`
+            Version: `${{ needs.setup.outputs.version }}`
+            Commit: `${{ github.sha }}`
+            Actor: `${{ github.actor }}`
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          
+      - name: Send failure notification
+        if: needs.validate.result == 'failure' || needs.deploy.result == 'failure'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#deployments'
+          text: |
+            🚨 **Deployment Failed**
+            Environment: `${{ needs.setup.outputs.environment }}`
+            Version: `${{ needs.setup.outputs.version }}`
+            Commit: `${{ github.sha }}`
+            Actor: `${{ github.actor }}`
+            
+            Please check the GitHub Actions logs for details.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

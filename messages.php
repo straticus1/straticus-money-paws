@@ -17,7 +17,7 @@ $conversations = getConversationsForUser($_SESSION['user_id']);
         <?php else: ?>
             <?php foreach ($conversations as $convo): ?>
                                 <a href="conversation.php?id=<?php echo htmlspecialchars($convo['id']); ?>" class="conversation-item <?php echo ($convo['unread_count'] > 0) ? 'unread' : ''; ?>">
-                    <img src="<?php echo htmlspecialchars($convo['other_user_avatar'] ?? '/assets/images/default-avatar.png'); ?>" alt="" class="avatar">
+                    <img src="<?php echo htmlspecialchars($convo['other_user_avatar'] ?? '/assets/images/default-avatar.png'); ?>" alt="<?php echo htmlspecialchars($convo['other_user_name']); ?> profile picture" class="avatar">
                     <div class="convo-details">
                         <div class="convo-header">
                             <strong><?php echo htmlspecialchars($convo['other_user_name']); ?></strong>

@@ -1,0 +1,268 @@
+---
+# Automated Rollback System for Money Paws
+- name: Initialize rollback process
+  debug:
+    msg: |
+      🔄 Starting automated rollback for {{ target_env }}
+      Current Version: {{ current_deployed_version }}
+      Failed Version: {{ deploy_version }}
+
+- name: Load version history
+  shell: |
+    aws ssm get-parameter \
+      --name "/{{ app_name }}/{{ target_env }}/deployment-history" \
+      --query 'Parameter.Value' \
+      --output text 2>/dev/null || echo '[]'
+  register: deployment_history_raw
+
+- name: Parse deployment history
+  set_fact:
+    deployment_history: "{{ deployment_history_raw.stdout | from_json }}"
+
+- name: Determine rollback target
+  set_fact:
+    rollback_version: "{{ deployment_history[-2].version if deployment_history | length > 1 else current_deployed_version }}"
+    rollback_task_definition: "{{ deployment_history[-2].task_definition_arn if deployment_history | length > 1 else '' }}"
+
+- name: Validate rollback target
+  fail:
+    msg: |
+      Cannot determine valid rollback target.
+      Deployment history: {{ deployment_history | length }} entries
+      Current version: {{ current_deployed_version }}
+  when: rollback_version == 'none' or rollback_version == deploy_version
+
+- name: Check rollback version configuration
+  set_fact:
+    rollback_config: "{{ versions[rollback_version] | default({}) }}"
+
+- name: Validate rollback is supported
+  fail:
+    msg: "Rollback to version {{ rollback_version }} is not supported"
+  when: not (rollback_config.rollback_supported | default(true))
+
+- name: Create rollback checkpoint
+  shell: |
+    aws ssm put-parameter \
+      --name "/{{ app_name }}/{{ target_env }}/rollback-in-progress" \
+      --value "{{ ansible_date_time.iso8601 }}:{{ deploy_version }}:{{ rollback_version }}" \
+      --type String \
+      --overwrite
+
+- name: Stop current deployment (if in progress)
+  shell: |
+    # Get current deployment ID
+    DEPLOYMENT_ID=$(aws ecs describe-services \
+      --cluster {{ environments[target_env].cluster_name }} \
+      --services {{ environments[target_env].service_name }} \
+      --query 'services[0].deployments[?status==`PENDING` || status==`RUNNING`].id' \
+      --output text | head -1)
+    
+    if [ ! -z "$DEPLOYMENT_ID" ] && [ "$DEPLOYMENT_ID" != "None" ]; then
+      echo "Stopping deployment: $DEPLOYMENT_ID"
+      # Note: AWS doesn't allow stopping deployments directly
+      # We'll proceed with rollback which will supersede the current deployment
+    fi
+  register: stop_deployment_result
+
+- name: Execute emergency rollback
+  block:
+    - name: Rollback database migrations (if needed)
+      shell: |
+        if [ "{{ rollback_config.requires_migration | default(false) }}" == "True" ]; then
+          echo "🗃️  Rolling back database migrations..."
+          # Run migration rollback script
+          docker run --rm \
+            -e DB_HOST="{{ db_host }}" \
+            -e DB_NAME="{{ db_name }}" \
+            -e DB_USER="{{ db_username }}" \
+            -e DB_PASS="{{ db_password }}" \
+            {{ ecr_repository_url }}:{{ rollback_version }} \
+            php artisan migrate:rollback --step=1 --force
+        fi
+      when: rollback_config.requires_migration | default(false)
+
+    - name: Get or create rollback task definition
+      shell: |
+        if [ ! -z "{{ rollback_task_definition }}" ]; then
+          echo "{{ rollback_task_definition }}"
+        else
+          # Create new task definition for rollback version
+          aws ecs describe-task-definition \
+            --task-definition {{ environments[target_env].service_name }} \
+            --query 'taskDefinition' | jq '
+            .family = "{{ environments[target_env].service_name }}" |
+            .containerDefinitions[0].image = "{{ ecr_repository_url }}:{{ rollback_version }}" |
+            .containerDefinitions[0].environment = [
+              {"name": "APP_ENV", "value": "{{ target_env }}"},
+              {"name": "APP_VERSION", "value": "{{ rollback_version }}"},
+              {"name": "DB_HOST", "value": "{{ db_host }}"},
+              {"name": "REDIS_HOST", "value": "{{ redis_host }}"},
+              {"name": "ROLLBACK_MODE", "value": "true"}
+            ] + .containerDefinitions[0].environment |
+            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .placementConstraints, .compatibilities, .registeredAt, .registeredBy)
+            ' > /tmp/rollback-task-definition.json
+          
+          aws ecs register-task-definition \
+            --cli-input-json file:///tmp/rollback-task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text
+        fi
+      register: rollback_task_definition_arn
+
+    - name: Execute service rollback
+      shell: |
+        echo "🔄 Rolling back ECS service to version {{ rollback_version }}"
+        aws ecs update-service \
+          --cluster {{ environments[target_env].cluster_name }} \
+          --service {{ environments[target_env].service_name }} \
+          --task-definition {{ rollback_task_definition_arn.stdout }} \
+          --force-new-deployment
+
+    - name: Wait for rollback deployment to stabilize
+      shell: |
+        echo "⏳ Waiting for rollback to complete..."
+        timeout 1200 aws ecs wait services-stable \
+          --cluster {{ environments[target_env].cluster_name }} \
+          --services {{ environments[target_env].service_name }}
+      register: rollback_wait_result
+
+    - name: Verify rollback success
+      shell: |
+        # Check if the correct number of healthy tasks are running
+        RUNNING_COUNT=$(aws ecs describe-services \
+          --cluster {{ environments[target_env].cluster_name }} \
+          --services {{ environments[target_env].service_name }} \
+          --query 'services[0].runningCount' \
+          --output text)
+        
+        DESIRED_COUNT="{{ environments[target_env].desired_count }}"
+        
+        if [ "$RUNNING_COUNT" -eq "$DESIRED_COUNT" ]; then
+          echo "✅ Rollback successful: $RUNNING_COUNT/$DESIRED_COUNT tasks healthy"
+          exit 0
+        else
+          echo "❌ Rollback verification failed: $RUNNING_COUNT/$DESIRED_COUNT tasks healthy"
+          exit 1
+        fi
+      register: rollback_verification
+
+    - name: Test application health after rollback
+      uri:
+        url: "{{ application_base_url }}/api/health"
+        method: GET
+        status_code: 200
+        timeout: 30
+      register: health_check_result
+      retries: 5
+      delay: 15
+
+    - name: Update deployment tracking
+      shell: |
+        # Record successful rollback
+        TIMESTAMP="{{ ansible_date_time.iso8601 }}"
+        
+        # Update deployment history
+        HISTORY=$(aws ssm get-parameter \
+          --name "/{{ app_name }}/{{ target_env }}/deployment-history" \
+          --query 'Parameter.Value' \
+          --output text 2>/dev/null || echo '[]')
+        
+        NEW_ENTRY="{\"version\": \"{{ rollback_version }}\", \"timestamp\": \"$TIMESTAMP\", \"type\": \"rollback\", \"from_version\": \"{{ deploy_version }}\", \"task_definition_arn\": \"{{ rollback_task_definition_arn.stdout }}\"}"
+        
+        UPDATED_HISTORY=$(echo "$HISTORY" | jq ". + [$NEW_ENTRY]")
+        
+        aws ssm put-parameter \
+          --name "/{{ app_name }}/{{ target_env }}/deployment-history" \
+          --value "$UPDATED_HISTORY" \
+          --type String \
+          --overwrite
+        
+        # Remove rollback in progress marker
+        aws ssm delete-parameter \
+          --name "/{{ app_name }}/{{ target_env }}/rollback-in-progress" || true
+
+    - name: Send rollback success notification
+      uri:
+        url: "{{ slack_webhook_url }}"
+        method: POST
+        body_format: json
+        body:
+          channel: "#deployments"
+          username: "Money Paws Deploy Bot"
+          icon_emoji: ":recycle:"
+          text: |
+            🔄 **Rollback Successful**
+            Environment: `{{ target_env }}`
+            Rolled back from: `{{ deploy_version }}`
+            Rolled back to: `{{ rollback_version }}`
+            Duration: {{ (ansible_date_time.epoch | int) - (rollback_start_time | int) }}s
+            Status: ✅ Application is healthy
+      when: slack_webhook_url is defined
+
+  rescue:
+    - name: Rollback failed - escalate to emergency procedures
+      debug:
+        msg: |
+          🚨 CRITICAL: Rollback failed for {{ target_env }}
+          This requires immediate manual intervention!
+
+    - name: Create emergency alert
+      shell: |
+        aws sns publish \
+          --topic-arn "{{ emergency_sns_topic_arn }}" \
+          --subject "CRITICAL: Money Paws Rollback Failed - {{ target_env }}" \
+          --message "Automated rollback failed for {{ target_env }} environment. Manual intervention required immediately. Failed version: {{ deploy_version }}, Attempted rollback to: {{ rollback_version }}"
+      when: emergency_sns_topic_arn is defined
+
+    - name: Log emergency details
+      shell: |
+        aws logs create-log-stream \
+          --log-group-name "/aws/ecs/emergency" \
+          --log-stream-name "rollback-failure-{{ target_env }}-{{ ansible_date_time.epoch }}" || true
+        
+        aws logs put-log-events \
+          --log-group-name "/aws/ecs/emergency" \
+          --log-stream-name "rollback-failure-{{ target_env }}-{{ ansible_date_time.epoch }}" \
+          --log-events timestamp={{ ansible_date_time.epoch }}000,message="EMERGENCY: Rollback failed for {{ target_env }}. Deploy version: {{ deploy_version }}, Rollback target: {{ rollback_version }}"
+
+    - name: Set emergency maintenance mode
+      shell: |
+        # Enable maintenance mode
+        aws ssm put-parameter \
+          --name "/{{ app_name }}/{{ target_env }}/maintenance-mode" \
+          --value "true" \
+          --type String \
+          --overwrite
+      
+    - name: Send emergency notification
+      uri:
+        url: "{{ slack_webhook_url }}"
+        method: POST
+        body_format: json
+        body:
+          channel: "#emergency"
+          username: "Money Paws Emergency"
+          icon_emoji: ":rotating_light:"
+          text: |
+            🚨 **CRITICAL ALERT: ROLLBACK FAILED**
+            Environment: `{{ target_env }}`
+            Failed deployment: `{{ deploy_version }}`
+            Failed rollback target: `{{ rollback_version }}`
+            
+            **IMMEDIATE ACTION REQUIRED**
+            - Manual intervention needed
+            - Maintenance mode enabled
+            - Check AWS Console for service status
+            
+            @channel @here
+      when: slack_webhook_url is defined
+
+    - name: Fail with emergency status
+      fail:
+        msg: |
+          🚨 EMERGENCY: Rollback failed for {{ target_env }}
+          - Maintenance mode has been enabled
+          - Emergency alerts have been sent
+          - Manual intervention is required immediately
+          - Check AWS ECS console for service status

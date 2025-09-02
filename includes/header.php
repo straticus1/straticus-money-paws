@@ -12,13 +12,15 @@
         <ul class="nav-links">
             <li><a href="index.php">Home</a></li>
             <li><a href="gallery.php">Gallery</a></li>
-                        <li><a href="leaderboards.php">Leaderboards</a></li>
+            <li><a href="breeding.php">🧬 Breeding</a></li>
+            <li><a href="tournaments.php">🏆 Tournaments</a></li>
+            <li><a href="leaderboards.php">Leaderboards</a></li>
             <li><a href="abandoned_pets.php">Abandoned Pets</a></li>
             <?php if (isLoggedIn()): ?>
                 <li><a href="upload.php">Upload</a></li>
                 <li><a href="/profile.php">Profile</a></li>
                 <li><a href="vet_clinic.php">⚕️ Vet Clinic</a></li>
-                                <li><a href="friends.php">Friends</a></li>
+                <li><a href="friends.php">Friends</a></li>
                 <li><a href="quests.php">Quests</a></li>
                 <li><a href="vacation_mode.php">Vacation Mode</a></li>
                 <li><a href="/messages.php" class="nav-link">Messages</a>

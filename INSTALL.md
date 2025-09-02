@@ -29,6 +29,82 @@ This guide provides comprehensive installation instructions for Money Paws, a cr
 - **Node.js 16+** - For desktop application (optional)
 - **npm/yarn** - For desktop app dependencies (optional)
 
+## 🚀 Installation & Deployment Options
+
+### Production Deployment (AWS Infrastructure)
+
+For production deployments, Money Paws includes enterprise-grade AWS infrastructure automation.
+
+#### Prerequisites for AWS Deployment
+- **AWS Account** with appropriate permissions
+- **Terraform 1.0+** installed locally
+- **Ansible 2.9+** installed locally
+- **Docker** installed for containerization
+- **AWS CLI** configured with access keys
+
+#### AWS Infrastructure Setup
+
+```bash
+# Clone repository
+git clone https://github.com/yourusername/money-paws.git
+cd money-paws
+
+# Configure AWS credentials
+aws configure
+
+# Initialize Terraform
+cd infrastructure/terraform
+terraform init
+
+# Deploy to development environment
+terraform plan -var-file="environments/dev.tfvars" -out=tfplan
+terraform apply tfplan
+
+# Deploy application using deployment script
+cd ../scripts
+./deploy.sh -e dev -v $(cat ../../version.json | jq -r '.current_version')
+```
+
+#### Deployment Environments
+
+**Development Environment**
+- Auto-deployment enabled
+- Cost: ~$50/month
+- Resources: t3.medium instances
+- Purpose: Feature development and testing
+
+**Staging Environment**  
+- Manual deployment with approval
+- Cost: ~$150/month
+- Resources: t3.large instances
+- Purpose: Pre-production testing
+
+**Production Environment**
+- Manual deployment only
+- Cost: ~$500/month (scales with usage)
+- Resources: c5.xlarge instances with Multi-AZ RDS
+- Features: Blue-green deployment, automated backups, monitoring
+
+#### Deployment Commands
+
+```bash
+# Create new version
+./infrastructure/scripts/version.sh create 3.2.1 -m "Bug fixes and improvements"
+
+# Deploy to staging
+./infrastructure/scripts/deploy.sh -e staging -v 3.2.1
+
+# Deploy to production
+./infrastructure/scripts/deploy.sh -e production -v 3.2.1
+
+# Rollback if needed
+./infrastructure/scripts/rollback.sh -e production
+```
+
+For detailed deployment documentation, see [infrastructure/scripts/README.md](infrastructure/scripts/README.md)
+
+### Local Development Installation
+
 ## 🚀 Installation Methods
 
 ### Method 1: Automated Installation (Recommended)

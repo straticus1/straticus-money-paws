@@ -78,6 +78,21 @@ Money Paws is a revolutionary cryptocurrency-powered pet platform where users ca
 - **100% Keyboard Navigation**: No mouse required
 - **Free for Accessibility Users**: Complete access at no cost
 
+### ♿ Comprehensive Web Accessibility
+- **WCAG 2.1 AA Compliance**: Professional accessibility standards for all users
+- **Screen Reader Optimized**: Complete functionality via NVDA, JAWS, ORCA, and VoiceOver
+- **Descriptive Alt Text**: Meaningful descriptions for all pet images and visual content
+- **ARIA Labels**: Comprehensive labeling for forms, modals, and interactive elements
+- **Semantic HTML**: Proper document structure for logical screen reader navigation
+- **Keyboard Navigation**: Full platform access without mouse interaction
+- **Focus Management**: Proper focus flow and visual indicators
+- **Progress Announcements**: Screen reader accessible progress bars and status updates
+- **Form Accessibility**: Clear labeling, error messages, and input validation feedback
+- **Modal Accessibility**: Proper focus trapping and restoration for dialog boxes
+- **Gaming for Blind Users**: Complete crypto gaming access via screen reader
+- **Pet Care Interface**: Fully accessible virtual pet feeding and care system
+- **Social Features**: Screen reader friendly messaging, friends, and community features
+
 ## 🎆 Technology Stack
 
 ### Backend
@@ -88,8 +103,23 @@ Money Paws is a revolutionary cryptocurrency-powered pet platform where users ca
   - mbstring for string handling
   - OpenSSL for security
   - fileinfo for file validation
+- **PostgreSQL 13+** with Multi-AZ deployment for production
 - **MySQL 8.0+** with optimized schema and indexing
 - **SQLite Support**: Alternative database for development and testing
+
+### Infrastructure & DevOps
+- **AWS Cloud Infrastructure**: Production-ready multi-environment setup
+  - **Amazon ECS**: Container orchestration with Fargate
+  - **Amazon RDS**: Managed PostgreSQL with automated backups
+  - **Amazon ElastiCache**: Redis caching layer
+  - **Application Load Balancer**: SSL termination and health checks
+  - **Amazon S3 + CloudFront**: Static asset storage and CDN
+  - **Amazon VPC**: Secure networking with private/public subnets
+- **Infrastructure as Code**: Terraform modules for all environments
+- **Configuration Management**: Ansible playbooks for deployment automation
+- **CI/CD Pipeline**: GitHub Actions with multi-environment deployment
+- **Containerization**: Docker with multi-stage builds and health checks
+- **Version Management**: Advanced version tracking and rollback capabilities
 
 ### Frontend
 - **Modern HTML5/CSS3** with responsive design
@@ -104,6 +134,7 @@ Money Paws is a revolutionary cryptocurrency-powered pet platform where users ca
 - **Stability AI SDXL** for advanced image generation
 - **OAuth2 APIs** for social authentication
 - **Real-time Crypto Pricing** via multiple exchanges
+- **AWS Services**: SSM Parameter Store, CloudWatch, ECR
 
 ## 🔒 Security Update Notice
 
@@ -293,6 +324,138 @@ money-paws/
 - 🦊 Foxes
 - 🐻 Bears
 - 🐾 Any animal with paws
+
+## 🚀 Deployment & Infrastructure
+
+### Production-Ready AWS Infrastructure
+
+Money Paws includes enterprise-grade infrastructure automation for seamless deployment to AWS.
+
+#### Available Environments
+- **Development**: Auto-deployment for rapid iteration
+- **Staging**: Production-like environment for testing
+- **Production**: High-availability with blue-green deployments
+
+#### Infrastructure Components
+```bash
+infrastructure/
+├── terraform/                   # Infrastructure as Code
+│   ├── main.tf                 # Main Terraform configuration
+│   ├── variables.tf            # Input variables
+│   ├── outputs.tf              # Output values
+│   ├── modules/                # Terraform modules
+│   │   ├── vpc/                # Virtual Private Cloud
+│   │   ├── ecs/                # Container orchestration
+│   │   ├── rds/                # Managed database
+│   │   ├── redis/              # Caching layer
+│   │   ├── alb/                # Load balancer
+│   │   ├── s3/                 # Static storage
+│   │   ├── cloudfront/         # CDN
+│   │   └── monitoring/         # CloudWatch setup
+│   └── environments/           # Environment-specific configs
+│       ├── dev.tfvars
+│       ├── staging.tfvars
+│       └── production.tfvars
+│
+├── ansible/                    # Configuration Management
+│   ├── deploy.yml              # Main deployment playbook
+│   ├── rollback.yml            # Rollback procedures
+│   ├── tasks/                  # Ansible tasks
+│   └── templates/              # Configuration templates
+│
+└── scripts/                    # Deployment automation
+    ├── deploy.sh               # Master deployment script
+    ├── rollback.sh             # Rollback management
+    ├── version.sh              # Version management
+    └── README.md               # Deployment documentation
+```
+
+#### Deployment Workflow
+
+```bash
+# 1. Create a new version
+./infrastructure/scripts/version.sh create 3.2.1 -m "New feature release"
+
+# 2. Deploy to development
+./infrastructure/scripts/deploy.sh -e dev -v 3.2.1
+
+# 3. Deploy to staging
+./infrastructure/scripts/deploy.sh -e staging -v 3.2.1
+
+# 4. Deploy to production
+./infrastructure/scripts/deploy.sh -e production -v 3.2.1
+
+# 5. Rollback if needed
+./infrastructure/scripts/rollback.sh -e production
+```
+
+#### CI/CD Pipeline
+
+Automated deployment via GitHub Actions:
+
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy Money Paws
+on:
+  push:
+    branches: [ main, staging, development ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+        - development
+        - staging
+        - production
+```
+
+#### Infrastructure Features
+- **Auto-Scaling**: ECS services scale based on CPU/memory usage
+- **High Availability**: Multi-AZ deployment with automatic failover
+- **Security**: Private subnets, security groups, and encrypted storage
+- **Monitoring**: CloudWatch dashboards and automated alerting
+- **Backup**: Automated database backups and point-in-time recovery
+- **CDN**: CloudFront distribution for global content delivery
+- **SSL/TLS**: Automatic SSL certificate management
+
+#### Environment Specifications
+
+**Development Environment**
+- **Purpose**: Feature development and testing
+- **Resources**: t3.medium instances, db.t3.micro RDS
+- **Auto-deploy**: Enabled on push to development branch
+- **Cost**: ~$50/month
+
+**Staging Environment**
+- **Purpose**: Pre-production testing and QA
+- **Resources**: t3.large instances, db.t3.small RDS
+- **Auto-deploy**: Manual approval required
+- **Cost**: ~$150/month
+
+**Production Environment**
+- **Purpose**: Live production system
+- **Resources**: c5.xlarge instances, db.r5.large RDS Multi-AZ
+- **Auto-deploy**: Disabled, manual deployment only
+- **Blue-Green**: Zero-downtime deployments
+- **Cost**: ~$500/month (scales with usage)
+
+#### Monitoring & Observability
+- **Application Metrics**: Response time, error rate, throughput
+- **Infrastructure Metrics**: CPU, memory, disk, network usage
+- **Business Metrics**: User registrations, crypto transactions, game plays
+- **Alerting**: Slack notifications for critical issues
+- **Log Aggregation**: Centralized logging with search capabilities
+
+#### Security & Compliance
+- **Secrets Management**: AWS SSM Parameter Store
+- **Access Control**: IAM roles with least-privilege access
+- **Network Security**: Private subnets and security groups
+- **Data Encryption**: Encryption at rest and in transit
+- **Compliance Ready**: SOC2, PCI DSS preparation
+
+For detailed deployment instructions, see **[infrastructure/scripts/README.md](infrastructure/scripts/README.md)**
 
 ## Development
 

@@ -123,7 +123,7 @@ $userPets = getUserPets($_SESSION['user_id']);
                                 </p>
                             </div>
                             <div id="imagePreview" class="d-none">
-                                <img id="previewImg">
+                                <img id="previewImg" alt="Preview of uploaded pet image">
                                 <p id="fileName"></p>
                                                                 <button type="button" id="clearImageBtn" class="btn btn-secondary mt-3">
                                     Choose Different Image

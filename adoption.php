@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('agreementText').textContent = isSale ? 'By purchasing this pet, you agree to the terms.' : 'By adopting this pet, you agree to:';
 
         document.getElementById('petDisplay').innerHTML = `
-            <img src="uploads/${pet.filename}" class="modal-pet-image">
+            <img src="uploads/${pet.filename}" alt="${pet.original_name} - ${pet.description || 'Pet available for adoption'}" class="modal-pet-image">
             <h3>${pet.original_name}</h3>
             <p>${pet.description || 'A wonderful pet looking for a loving home.'}</p>
             <div class="modal-pet-fee">${isSale ? 'Sale Price' : 'Adoption Fee'}: $${parseFloat(pet.adoption_fee).toFixed(2)}</div>
