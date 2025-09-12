@@ -157,7 +157,9 @@ Money Paws is a revolutionary cryptocurrency-powered pet platform where users ca
 - **SSL Certificate** (required for OAuth2 and crypto payments)
 - **Minimum 2GB RAM** and **10GB storage**
 
-## ⚡ Quick Installation
+## ⚡ Installation System
+
+### Quick Installation
 
 ```bash
 # Clone the repository
@@ -170,10 +172,94 @@ composer install
 # Run automated installer (recommended)
 chmod +x install.sh
 ./install.sh
-
-# Or use web-based installer
-# Navigate to http://yourdomain.com/install.php
 ```
+
+### Installation Methods
+
+#### 1. CLI Installation (Recommended)
+```bash
+# Interactive installation
+./install.sh --interactive
+
+# Non-interactive with environment file
+./install.sh --env-file=/path/to/.env
+
+# Production installation
+./install.sh --env=production --secure
+
+# Development setup
+./install.sh --env=development --with-sample-data
+```
+
+#### 2. Web-Based Installation
+Navigate to `http://yourdomain.com/install.php` and follow the setup wizard:
+
+1. Environment Selection
+2. Dependency Validation
+3. Database Configuration
+4. Security Setup
+5. Feature Configuration
+6. Final Verification
+
+### Installation Features
+
+#### Environment Support
+- **Development**: Quick setup with sample data
+- **Staging**: Production-like environment for testing
+- **Production**: Secure setup with enhanced validation
+
+#### Automated Processes
+- Dependency validation and installation
+- Database schema setup and migration
+- Security key generation
+- SSL/TLS configuration
+- File permission management
+- Environment validation
+
+#### Security Features
+- Secure configuration generation
+- Automated security header setup
+- SSL/TLS configuration assistance
+- Database credential management
+- API key validation
+
+#### Validation & Checks
+- System requirement verification
+- Database connection testing
+- Security configuration validation
+- Post-installation health checks
+- Service availability testing
+
+### Installation Requirements
+
+#### Minimum Requirements
+- PHP 8.0+ with required extensions
+- MySQL 8.0+ or MariaDB 10.4+
+- 2GB RAM
+- 10GB storage
+
+#### Recommended Requirements
+- PHP 8.1+
+- MySQL 8.0+ with InnoDB
+- 4GB RAM
+- 20GB SSD storage
+- SSL certificate
+
+### Post-Installation
+
+#### Verification Steps
+1. Run health check: `./install.sh --verify`
+2. Test database connections
+3. Verify API integrations
+4. Check security configurations
+5. Validate file permissions
+
+#### Security Checklist
+- [ ] SSL/TLS configuration
+- [ ] API key validation
+- [ ] Database credential security
+- [ ] File permission verification
+- [ ] Security header configuration
 
 For detailed installation instructions, see **[INSTALL.md](INSTALL.md)**
 
