@@ -107,3 +107,4 @@ docs/build/
 # Electron build artifacts
 gui/desktop/dist/
 gui/desktop/out/
+paws_prompt
