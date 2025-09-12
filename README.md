@@ -261,7 +261,7 @@ Navigate to `http://yourdomain.com/install.php` and follow the setup wizard:
 - [ ] File permission verification
 - [ ] Security header configuration
 
-For detailed installation instructions, see **[INSTALL.md](INSTALL.md)**
+For detailed installation instructions, see **[INSTALL.md](docs/INSTALL.md)**
 
 ## 🔧 Configuration
 
@@ -395,12 +395,15 @@ money-paws/
 │   └── process_ai_generation.php    # AI setup processor
 │
 └── Documentation
-    ├── README.md                    # This file
-    ├── INSTALL.md                   # Installation guide
-    ├── CHANGELOG.md                 # Version history
-    ├── ABOUT.md                     # Project philosophy
-    ├── CREDITS.md                   # Contributors
-    └── DOCUMENTATION.txt            # Technical docs
+├── README.md                    # This file
+    └── docs/                        # Documentation
+        ├── INSTALL.md               # Installation guide
+        ├── CHANGELOG.md             # Version history
+        ├── ABOUT.md                 # Project philosophy
+        ├── CREDITS.md               # Contributors
+        ├── API_DOCUMENTATION.md     # API reference
+        ├── ENHANCED_FEATURES_README.md # Feature details
+        └── DOCUMENTATION.txt         # Technical documentation
 ```
 
 **Supported Animals**:
