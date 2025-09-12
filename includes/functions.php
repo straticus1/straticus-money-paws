@@ -1015,3 +1015,55 @@ function getPetById($pet_id) {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
+/**
+ * Create user with enhanced profile information
+ */
+function createUserWithProfile($email, $password, $name, $birth_date = null, $gaming_preference = 'educational') {
+    $pdo = get_db();
+    if (!$pdo) return false;
+    
+    try {
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO users (email, password, name, birth_date, gaming_preference, created_at) 
+            VALUES (?, ?, ?, ?, ?, NOW())
+        ");
+        
+        $birth_date_value = !empty($birth_date) ? $birth_date : null;
+        
+        if ($stmt->execute([$email, $hashedPassword, $name, $birth_date_value, $gaming_preference])) {
+            $user_id = $pdo->lastInsertId();
+            
+            // Give new users some starting Care Coins
+            $stmt = $pdo->prepare("
+                UPDATE users SET care_coins = 50 WHERE id = ?
+            ");
+            $stmt->execute([$user_id]);
+            
+            // Create welcome Care Coins transaction
+            $stmt = $pdo->prepare("
+                INSERT INTO care_coin_transactions 
+                (user_id, amount, transaction_type, description, created_at)
+                VALUES (?, 50, 'earned', 'Welcome bonus for new users', NOW())
+            ");
+            $stmt->execute([$user_id]);
+            
+            // Create welcome notification
+            $stmt = $pdo->prepare("
+                INSERT INTO notifications 
+                (user_id, type, title, message, icon, created_at, is_read)
+                VALUES (?, 'welcome', 'Welcome to Money Paws!', 'You received 50 Care Coins to get started. Complete daily quests to earn more!', '🎉', NOW(), 0)
+            ");
+            $stmt->execute([$user_id]);
+            
+            return true;
+        }
+    } catch (Exception $e) {
+        error_log("User creation failed: " . $e->getMessage());
+        return false;
+    }
+    
+    return false;
+}
+

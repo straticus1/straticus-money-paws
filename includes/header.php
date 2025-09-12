@@ -19,9 +19,16 @@
             <?php if (isLoggedIn()): ?>
                 <li><a href="upload.php">Upload</a></li>
                 <li><a href="/profile.php">Profile</a></li>
+                <li><a href="daily_quests.php">🎯 Daily Quests</a></li>
+                <li><a href="community_care.php">🤝 Community Care</a></li>
+                <li><a href="community_hub.php">🏘️ Community Hub</a></li>
+                <li><a href="adaptive_gaming.php">🎮 Smart Gaming</a></li>
+                <li><a href="metaverse.php">🌍 Metaverse</a></li>
+                <li><a href="store.php">🛒 Store</a></li>
+                <li><a href="social_hub.php">🌟 Social Hub</a></li>
+                <li><a href="education_hub.php">🎓 Education</a></li>
                 <li><a href="vet_clinic.php">⚕️ Vet Clinic</a></li>
                 <li><a href="friends.php">Friends</a></li>
-                <li><a href="quests.php">Quests</a></li>
                 <li><a href="vacation_mode.php">Vacation Mode</a></li>
                 <li><a href="/messages.php" class="nav-link">Messages</a>
                     <a href="/notifications.php" class="nav-link notifications-link"> <?php

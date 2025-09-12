@@ -6,26 +6,27 @@
 require_once 'includes/functions.php';
 require_once 'includes/crypto.php';
 require_once 'includes/pet_care.php';
-require_once 'includes/quests.php';
+require_once 'includes/daily_quests.php';
 
 requireLogin();
 
 // Track quest progress for visiting the store
 if (isset($_SESSION['user_id'])) {
-    update_quest_progress($_SESSION['user_id'], 'visit_store');
+    updateQuestProgress($_SESSION['user_id'], 'visit_store');
 }
 
 $currentUser = getUserById($_SESSION['user_id']);
 $error = '';
 $success = '';
 
-// Get user crypto balances
+// Get user crypto balances and Care Coins
 $balances = [];
 foreach (SUPPORTED_CRYPTOS as $crypto => $name) {
     $balances[$crypto] = getUserCryptoBalance($_SESSION['user_id'], $crypto);
 }
+$user_care_coins = getUserCareCoins($_SESSION['user_id']);
 
-// Handle purchase
+// Handle crypto purchase
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['purchase_item'])) {
     requireCSRFToken();
     $itemId = intval($_POST['item_id']);
@@ -45,8 +46,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['purchase_item'])) {
     }
 }
 
+// Handle Care Coins purchase
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['purchase_with_care_coins'])) {
+    requireCSRFToken();
+    $item_id = sanitizeInput($_POST['care_coins_item_id']);
+    $quantity = max(1, intval($_POST['quantity'] ?? 1));
+    
+    $care_coins_items = getCareCoinsStoreItems();
+    
+    if (isset($care_coins_items[$item_id])) {
+        $item = $care_coins_items[$item_id];
+        $total_cost = $item['cost'] * $quantity;
+        
+        if ($user_care_coins >= $total_cost) {
+            if (spendCareCoins($_SESSION['user_id'], $total_cost, "Store purchase: {$quantity}x {$item['name']}")) {
+                // Apply item effects to user's pets
+                applyCareCoinsItemToPets($_SESSION['user_id'], $item_id, $quantity);
+                
+                $success = "Successfully purchased {$quantity}x {$item['name']} for {$total_cost} Care Coins!";
+                $user_care_coins = getUserCareCoins($_SESSION['user_id']); // Refresh balance
+            } else {
+                $error = 'Purchase failed. Please try again.';
+            }
+        } else {
+            $error = "Insufficient Care Coins. You need {$total_cost} but only have {$user_care_coins}.";
+        }
+    } else {
+        $error = 'Invalid item selected.';
+    }
+}
+
 $storeItems = getStoreItems();
 $userInventory = getUserInventory($_SESSION['user_id']);
+$care_coins_items = getCareCoinsStoreItems();
 
 // Group items by type
 $itemsByType = [];
@@ -101,20 +133,112 @@ foreach ($storeItems as $item) {
             <?php endif; ?>
 
             <!-- User Balances -->
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <h3>Your Crypto Balances</h3>
+                        <div class="balance-grid-small">
+                            <?php foreach (SUPPORTED_CRYPTOS as $crypto => $name): ?>
+                                <div class="balance-item">
+                                    <h4><?php echo $crypto; ?></h4>
+                                    <p class="balance-amount">
+                                        <?php echo number_format($balances[$crypto], 8); ?>
+                                    </p>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="deposit.php" class="btn btn-primary">Add Funds</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <h3>🪙 Care Coins</h3>
+                        <div class="text-center">
+                            <h2 class="text-success"><?php echo number_format($user_care_coins); ?></h2>
+                            <p class="text-muted">Earned through community activities</p>
+                            <a href="daily_quests.php" class="btn btn-success btn-sm">Earn More</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Care Coins Store -->
             <div class="card">
-                <h3>Your Crypto Balances</h3>
-                <div class="balance-grid-small">
-                    <?php foreach (SUPPORTED_CRYPTOS as $crypto => $name): ?>
-                        <div class="balance-item">
-                            <h4><?php echo $crypto; ?></h4>
-                            <p class="balance-amount">
-                                <?php echo number_format($balances[$crypto], 8); ?>
-                            </p>
+                <h2>🪙 Care Coins Store - Free Items Earned Through Kindness</h2>
+                <p class="text-muted mb-4">Use Care Coins earned through daily quests and community activities to help your pets!</p>
+                
+                <div class="item-grid">
+                    <?php foreach ($care_coins_items as $item_id => $item): ?>
+                        <div class="item-card <?php echo $user_care_coins >= $item['cost'] ? '' : 'item-card-disabled'; ?>">
+                            <div class="item-emoji">
+                                <?php
+                                $emojis = [
+                                    'pet_food' => '🍯',
+                                    'happiness_treat' => '🥓',
+                                    'pet_toy' => '🎾',
+                                    'care_package' => '📦',
+                                    'skill_lesson' => '🎓'
+                                ];
+                                echo $emojis[$item_id] ?? '🎁';
+                                ?>
+                            </div>
+                            <h3><?php echo htmlspecialchars($item['name']); ?></h3>
+                            <p class="text-muted mb-3"><?php echo htmlspecialchars($item['description']); ?></p>
+                            
+                            <div class="item-stats">
+                                <?php if (isset($item['value'])): ?>
+                                    <div class="stat">
+                                        <div class="stat-value stat-value-green">+<?php echo $item['value']; ?></div>
+                                        <div class="stat-label">
+                                            <?php echo $item['effect'] === 'hunger_restore' ? 'Hunger' : 'Happiness'; ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <?php if ($item['type'] === 'bundle'): ?>
+                                    <div class="stat">
+                                        <div class="stat-value stat-value-blue">Bundle</div>
+                                        <div class="stat-label">Multiple Items</div>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            
+                            <div class="text-center mt-3">
+                                <div class="item-price">
+                                    <span class="care-coins-price"><?php echo $item['cost']; ?> 🪙</span>
+                                </div>
+                                
+                                <?php if ($user_care_coins >= $item['cost']): ?>
+                                    <form method="POST" style="display: inline;">
+                                        <?php echo getCSRFTokenField(); ?>
+                                        <input type="hidden" name="purchase_with_care_coins" value="1">
+                                        <input type="hidden" name="care_coins_item_id" value="<?php echo $item_id; ?>">
+                                        <input type="hidden" name="quantity" value="1">
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="fas fa-shopping-cart"></i> Buy with Care Coins
+                                        </button>
+                                    </form>
+                                <?php else: ?>
+                                    <button class="btn btn-secondary btn-sm" disabled>
+                                        Need <?php echo $item['cost'] - $user_care_coins; ?> more coins
+                                    </button>
+                                    <br><small class="text-muted mt-1">Complete daily quests to earn more!</small>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
-                <div class="text-center mt-3">
-                    <a href="deposit.php" class="btn btn-primary">Add Funds</a>
+                
+                <div class="alert alert-info mt-4">
+                    <h6><i class="fas fa-lightbulb"></i> How to Earn Care Coins:</h6>
+                    <ul class="mb-0">
+                        <li>Complete daily quests (up to 100 coins/day)</li>
+                        <li>Help care for community pets</li>
+                        <li>Play educational games</li>
+                        <li>Participate in community activities</li>
+                    </ul>
                 </div>
             </div>
 

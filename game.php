@@ -1,96 +1,17 @@
- <?php
+<?php
 /**
- * Money Paws - Cryptocurrency-Powered Pet Platform
+ * Money Paws - Smart Gaming Hub (Legacy Redirect)
  * Developed and Designed by Ryan Coleman. <coleman.ryan@gmail.com>
  */
 require_once 'includes/functions.php';
-require_once 'includes/crypto.php';
+require_once 'includes/adaptive_gaming.php';
+require_once 'includes/daily_quests.php';
 
 requireLogin();
 
-$currentUser = getUserById($_SESSION['user_id']);
-$error = '';
-$success = '';
-
-// Get user crypto balances
-$balances = [];
-foreach (SUPPORTED_CRYPTOS as $crypto => $name) {
-    $balances[$crypto] = getUserCryptoBalance($_SESSION['user_id'], $crypto);
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['play_game'])) {
-    requireCSRFToken();
-    $cryptoType = sanitizeInput($_POST['crypto_type']);
-    
-    if (!array_key_exists($cryptoType, SUPPORTED_CRYPTOS)) {
-        $error = 'Invalid cryptocurrency selected.';
-    } else {
-        $entryFeeUSD = GAME_ENTRY_FEE;
-        $cryptoAmount = convertUSDToCrypto($entryFeeUSD, $cryptoType);
-        
-        // In developer mode, skip crypto conversion and balance checks
-        if (defined('DEVELOPER_MODE') && DEVELOPER_MODE) {
-            $cryptoAmount = 0; // Free play
-        } else {
-            if ($cryptoAmount === null) {
-                $error = 'Unable to get crypto price. Please try again.';
-            } else {
-                $userBalance = getUserCryptoBalance($_SESSION['user_id'], $cryptoType);
-                
-                if ($userBalance < $cryptoAmount) {
-                    $error = 'Insufficient balance. Please add funds to your account.';
-                }
-            }
-        }
-        
-        if (!$error) {
-            // Deduct entry fee (skip in developer mode)
-            if (!(defined('DEVELOPER_MODE') && DEVELOPER_MODE)) {
-                updateUserBalance($_SESSION['user_id'], $cryptoType, $cryptoAmount, 'subtract');
-            }
-            
-            // Play game (simple random outcome for demo)
-            $gameResult = rand(1, 10);
-            $won = $gameResult <= 3; // 30% win rate
-            
-            if ($won) {
-                $winAmount = $cryptoAmount * 2.5; // 2.5x multiplier
-                
-                // In developer mode, simulate win without actual crypto
-                if (defined('DEVELOPER_MODE') && DEVELOPER_MODE) {
-                    $winAmount = 1.0; // Show 1.0 crypto win for demo
-                } else {
-                    updateUserBalance($_SESSION['user_id'], $cryptoType, $winAmount, 'add');
-                }
-                
-                // Record win (skip in developer mode to avoid database clutter)
-                if (!(defined('DEVELOPER_MODE') && DEVELOPER_MODE)) {
-                    $stmt = $pdo->prepare("INSERT INTO game_results (user_id, game_type, crypto_type, entry_fee, win_amount, result) VALUES (?, 'paw_match', ?, ?, ?, 'win')");
-                    $stmt->execute([$_SESSION['user_id'], $cryptoType, $cryptoAmount, $winAmount]);
-                }
-                
-                $success = "🎉 Congratulations! You won " . number_format($winAmount, 8) . " $cryptoType!" . 
-                          (defined('DEVELOPER_MODE') && DEVELOPER_MODE ? " (Developer Mode - No real crypto)" : "");
-            } else {
-                // Record loss (skip in developer mode)
-                if (!(defined('DEVELOPER_MODE') && DEVELOPER_MODE)) {
-                    $stmt = $pdo->prepare("INSERT INTO game_results (user_id, game_type, crypto_type, entry_fee, win_amount, result) VALUES (?, 'paw_match', ?, ?, 0, 'loss')");
-                    $stmt->execute([$_SESSION['user_id'], $cryptoType, $cryptoAmount]);
-                }
-                
-                $lossMessage = defined('DEVELOPER_MODE') && DEVELOPER_MODE ? 
-                    "😢 Better luck next time! (Developer Mode - No real crypto lost)" :
-                    "😢 Better luck next time! You lost " . number_format($cryptoAmount, 8) . " $cryptoType.";
-                $error = $lossMessage;
-            }
-            
-            // Refresh balances
-            foreach (SUPPORTED_CRYPTOS as $crypto => $name) {
-                $balances[$crypto] = getUserCryptoBalance($_SESSION['user_id'], $crypto);
-            }
-        }
-    }
-}
+// Redirect to new adaptive gaming system
+header('Location: adaptive_gaming.php');
+exit;
 ?>
 <!DOCTYPE html>
 <html lang="en">

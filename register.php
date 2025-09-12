@@ -14,9 +14,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = sanitizeInput($_POST['email']);
     $password = $_POST['password'];
     $confirmPassword = $_POST['confirm_password'];
+    $birth_date = sanitizeInput($_POST['birth_date'] ?? '');
+    $gaming_preference = sanitizeInput($_POST['gaming_preference'] ?? 'educational');
     
     if (empty($name) || empty($email) || empty($password) || empty($confirmPassword)) {
-        $error = 'Please fill in all fields.';
+        $error = 'Please fill in all required fields.';
     } elseif (!isValidEmail($email)) {
         $error = 'Please enter a valid email address.';
     } elseif (strlen($password) < 6) {
@@ -26,12 +28,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (getUserByEmail($email)) {
         $error = 'An account with this email already exists.';
     } else {
-        if (createUser($email, $password, $name)) {
-            $user = getUserByEmail($email);
-            loginUser($user['id']);
-            redirectTo('index.php');
-        } else {
-            $error = 'Registration failed. Please try again.';
+        // Validate birth date if provided
+        $age = null;
+        if (!empty($birth_date)) {
+            $birth_date_obj = DateTime::createFromFormat('Y-m-d', $birth_date);
+            if ($birth_date_obj && $birth_date_obj <= new DateTime()) {
+                $today = new DateTime();
+                $age = $today->diff($birth_date_obj)->y;
+                
+                // Age-based gaming preference validation
+                if ($age < 13) {
+                    $error = 'You must be at least 13 years old to create an account.';
+                } elseif ($age < 18 && $gaming_preference !== 'educational') {
+                    $gaming_preference = 'educational'; // Force educational for minors
+                }
+            } elseif (!empty($birth_date)) {
+                $error = 'Please enter a valid birth date.';
+            }
+        }
+        
+        if (!$error) {
+            if (createUserWithProfile($email, $password, $name, $birth_date, $gaming_preference)) {
+                $user = getUserByEmail($email);
+                loginUser($user['id']);
+                
+                // Process referral code if provided
+                if (isset($_GET['ref']) && !empty($_GET['ref'])) {
+                    require_once 'includes/social_features.php';
+                    processReferral($_GET['ref'], $user['id']);
+                }
+                
+                // Show age-appropriate welcome message
+                if ($age !== null && $age < 18) {
+                    $_SESSION['welcome_message'] = 'Welcome to Money Paws! Your account is set up for educational gaming to help you learn while having fun.';
+                }
+                
+                redirectTo('index.php');
+            } else {
+                $error = 'Registration failed. Please try again.';
+            }
         }
     }
 }
@@ -96,6 +131,37 @@ require_once 'includes/html_head.php';
                             <label for="confirm_password">Confirm Password</label>
                             <input type="password" id="confirm_password" name="confirm_password" class="form-control" 
                                    minlength="6" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="birth_date">Birth Date (Optional)</label>
+                            <input type="date" id="birth_date" name="birth_date" class="form-control"
+                                   value="<?php echo isset($_POST['birth_date']) ? htmlspecialchars($_POST['birth_date']) : ''; ?>"
+                                   max="<?php echo date('Y-m-d'); ?>">
+                            <small class="form-text">
+                                Helps us provide age-appropriate content. Users under 18 automatically get educational gaming mode.
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="gaming_preference">Gaming Experience Preference</label>
+                            <select id="gaming_preference" name="gaming_preference" class="form-control">
+                                <option value="educational" 
+                                        <?php echo (isset($_POST['gaming_preference']) && $_POST['gaming_preference'] === 'educational') ? 'selected' : ''; ?>>
+                                    🎓 Educational - Learn while you play (recommended for all ages)
+                                </option>
+                                <option value="mixed" 
+                                        <?php echo (isset($_POST['gaming_preference']) && $_POST['gaming_preference'] === 'mixed') ? 'selected' : ''; ?>>
+                                    ⚖️ Mixed - Educational and traditional games (18+)
+                                </option>
+                                <option value="traditional" 
+                                        <?php echo (isset($_POST['gaming_preference']) && $_POST['gaming_preference'] === 'traditional') ? 'selected' : ''; ?>>
+                                    🎲 Traditional - Classic gaming with responsible features (18+)
+                                </option>
+                            </select>
+                            <small class="form-text">
+                                You can change this anytime. All users have access to educational content.
+                            </small>
                         </div>
 
                         <div class="form-group">
