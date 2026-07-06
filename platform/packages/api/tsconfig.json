@@ -7,7 +7,8 @@
   "references": [
     { "path": "../db" },
     { "path": "../ledger" },
-    { "path": "../auth" }
+    { "path": "../auth" },
+    { "path": "../payments" }
   ],
   "include": ["src"]
 }

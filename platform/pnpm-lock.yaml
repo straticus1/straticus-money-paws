@@ -35,6 +35,9 @@ importers:
       '@paws/ledger':
         specifier: workspace:*
         version: link:../ledger
+      '@paws/payments':
+        specifier: workspace:*
+        version: link:../payments
       drizzle-orm:
         specifier: ^0.44.0
         version: 0.44.7(@types/pg@8.20.0)(pg@8.22.0)

@@ -9,6 +9,7 @@ import { registerAuthRoutes } from './routes/auth.js';
 import { registerMeRoutes } from './routes/me.js';
 import { registerPetRoutes } from './routes/pets.js';
 import { registerStoreRoutes } from './routes/store.js';
+import { registerWalletRoutes, type WalletDeps } from './routes/wallet.js';
 
 export interface AppDeps {
   db: Db;
@@ -19,6 +20,8 @@ export interface AppDeps {
    * server.ts turns it on.
    */
   rateLimit?: boolean;
+  /** Injected fetch for payment-provider calls (tests). */
+  providerFetch?: WalletDeps['providerFetch'];
 }
 
 /**
@@ -66,6 +69,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       registerMeRoutes(v1, db);
       registerPetRoutes(v1, db);
       registerStoreRoutes(v1, db);
+      const walletDeps: WalletDeps = {};
+      if (deps.providerFetch) walletDeps.providerFetch = deps.providerFetch;
+      registerWalletRoutes(v1, db, walletDeps);
     },
     { prefix: '/api/v1' },
   );
