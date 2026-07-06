@@ -1,0 +1,454 @@
+:root {
+  --bg: #fdf6ec;
+  --ink: #2d2a26;
+  --accent: #e8853d;
+  --card-bg: #ffffff;
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --radius: 12px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+h1, h2, h3 {
+  margin: 0 0 0.5rem;
+}
+
+p {
+  margin: 0 0 0.75rem;
+}
+
+/* ---- Header ---- */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header__logo {
+  font-weight: 700;
+  font-size: 1.15rem;
+  white-space: nowrap;
+}
+
+.header__balances {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.balance-chip {
+  background: var(--bg);
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---- Main ---- */
+
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* ---- Card ---- */
+
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: 20px;
+}
+
+/* ---- Buttons ---- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1.5px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, opacity 0.15s;
+  font-family: inherit;
+}
+
+.btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn--primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.btn--primary:hover {
+  opacity: 0.88;
+}
+
+.btn--ghost {
+  border-color: transparent;
+  color: var(--ink);
+  opacity: 0.55;
+}
+
+.btn--ghost:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--ink);
+  opacity: 1;
+}
+
+.btn--full {
+  width: 100%;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---- Notice ---- */
+
+.notice {
+  padding: 10px 16px;
+  border-radius: 8px;
+  margin: 8px 0;
+  font-size: 0.88rem;
+}
+
+.notice--error {
+  background: #fce8e8;
+  color: #b83232;
+  border: 1px solid #f5c6c6;
+}
+
+.notice--loading {
+  background: #e8f0fc;
+  color: #2c5f9e;
+  border: 1px solid #c6d8f5;
+}
+
+.notice--info {
+  background: #fdf3e3;
+  color: #7a5c1e;
+  border: 1px solid #f5dea0;
+}
+
+/* ---- Auth ---- */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-card h1 {
+  font-size: 1.5rem;
+  margin-bottom: 2px;
+}
+
+.auth-card h2 {
+  color: #888;
+  font-size: 1rem;
+  font-weight: 400;
+  margin-bottom: 22px;
+}
+
+.auth-link {
+  text-align: center;
+  font-size: 0.88rem;
+  color: #888;
+  margin-top: 14px;
+}
+
+.auth-link a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* ---- Form fields ---- */
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.field input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: #fff;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ---- Pet grid ---- */
+
+.pet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  margin: 20px 0 32px;
+}
+
+.pet-card {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pet-card--dead {
+  opacity: 0.5;
+}
+
+.pet-emoji {
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.pet-card h3 {
+  font-size: 1.05rem;
+  margin-bottom: 2px;
+}
+
+.pet-species {
+  color: #888;
+  font-size: 0.82rem;
+  margin-bottom: 10px;
+  text-transform: capitalize;
+}
+
+.pet-dead-label {
+  color: #b83232;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* ---- Stat bars ---- */
+
+.pet-stats {
+  width: 100%;
+  text-align: left;
+  margin: 8px 0 14px;
+}
+
+.pet-stats label {
+  display: block;
+  font-size: 0.72rem;
+  color: #999;
+  margin-top: 8px;
+  margin-bottom: 3px;
+}
+
+.stat-bar {
+  height: 6px;
+  background: #eee;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.stat-bar__fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* ---- New pet form ---- */
+
+.new-pet-section {
+  margin-top: 36px;
+}
+
+.new-pet-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.new-pet-form input,
+.new-pet-form select {
+  padding: 9px 12px;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: var(--ink);
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.new-pet-form input:focus,
+.new-pet-form select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ---- Store ---- */
+
+.store-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  margin: 20px 0;
+}
+
+.store-card {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.store-emoji {
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.store-card h3 {
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.store-description {
+  color: #777;
+  font-size: 0.82rem;
+  margin-bottom: 8px;
+  flex: 1;
+}
+
+.store-price {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink);
+  margin: 6px 0 12px;
+}
+
+/* ---- Wallet ---- */
+
+.wallet-balances {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 20px 0 28px;
+}
+
+.balance-card {
+  min-width: 180px;
+  text-align: center;
+}
+
+.balance-currency {
+  color: #888;
+  font-size: 0.82rem;
+  margin-bottom: 4px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.balance-amount {
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ---- Modal ---- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.modal {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 380px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.modal h3 {
+  margin-bottom: 16px;
+}
+
+.feed-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feed-list li .btn {
+  width: 100%;
+}
