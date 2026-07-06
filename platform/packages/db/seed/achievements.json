@@ -1,0 +1,5 @@
+[{"id":1,"achievement_name":"First Friend","achievement_description":"Make your first friend.","action_type":"add_friend","goal_value":1,"reward_currency":"gems","reward_amount":10,"created_at":"2025-08-26 08:16:44"},
+{"id":2,"achievement_name":"Pet Owner","achievement_description":"Own your first pet.","action_type":"own_pet","goal_value":1,"reward_currency":"gems","reward_amount":10,"created_at":"2025-08-26 08:16:44"},
+{"id":3,"achievement_name":"Kind Soul","achievement_description":"Feed another user's pet for the first time.","action_type":"feed_pet_other","goal_value":1,"reward_currency":"gems","reward_amount":5,"created_at":"2025-08-26 08:16:44"},
+{"id":4,"achievement_name":"Top Dog","achievement_description":"Own 10 pets.","action_type":"own_pet","goal_value":10,"reward_currency":"gems","reward_amount":50,"created_at":"2025-08-26 08:16:44"},
+{"id":5,"achievement_name":"Gifting Guru","achievement_description":"Send a total of 50 gifts.","action_type":"send_gift","goal_value":50,"reward_currency":"gems","reward_amount":100,"created_at":"2025-08-26 08:16:44"}]
