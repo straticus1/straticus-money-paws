@@ -64,22 +64,41 @@ The full flow was verified through the compose stack (nginx → api → postgres
 seeded store items, register, derived balances, pet creation, fail-closed
 deposit (503 without Coinbase creds), SPA serving.
 
-## Tuesday-night cutover runbook
+## Deployment state (deployed overnight July 6)
 
-1. On the server: `git clone -b v5-platform`, `cd platform`.
-2. Create `.env`: `POSTGRES_PASSWORD` (strong), `AUTH_SECRET`
-   (`openssl rand -base64 32`), `COINBASE_API_KEY`, `COINBASE_WEBHOOK_SECRET`,
-   optional `WEB_PORT`.
-3. `docker compose up -d --build` — migrations and seed run on api boot.
-4. Configure the Coinbase Commerce webhook to POST
-   `https://paws.money/api/v1/webhooks/coinbase`.
-5. Point the domain / reverse proxy at the `web` service (port 8080 by
-   default). TLS terminates at your proxy — the API sets no cookies; the
-   bearer token flow works unchanged behind HTTPS.
-6. Make yourself admin: `docker compose exec postgres psql -U paws -d paws
+**DEPLOYED and running on apps2.afterdarksys.com** (chosen for most free
+resources: 24 cores / 96GB RAM / 418GB disk):
+
+- Stack at `~/paws.money/platform`, `.env` on the host (0600), web bound to
+  `127.0.0.1:8091` only — deliberately unreachable from outside until TLS.
+- Caddy vhost for `paws.money, www.paws.money` appended to
+  `/opt/domainshots/caddy/Caddyfile` (backup: `Caddyfile.bak-pre-paws`),
+  validated + reloaded. Auto-TLS will kick in as soon as DNS resolves.
+- Smoke-tested on the host: register, derived balances, deposit fails closed
+  (503, no Coinbase creds yet).
+
+## Remaining human steps (blocked on credentials only)
+
+1. **DNS — pick one:**
+   - paws.money is delegated to OCI DNS pool `p201`, but no zone exists and
+     the OCI account's `global-zone-count` limit is 0/full. Either raise the
+     limit in the OCI Console and create a `paws.money` zone with
+     `A @ -> 108.165.123.5` and `A www -> 108.165.123.5` (nameservers must
+     come out as `ns*.p201.dns.oraclecloud.net` — same pool), or
+   - change the delegation at the registrar to nameservers you control
+     (e.g. ns1/ns2.idoms.net) and add the zone there.
+2. **Coinbase Commerce**: put `COINBASE_API_KEY` and
+   `COINBASE_WEBHOOK_SECRET` into `~/paws.money/platform/.env` on apps2,
+   `docker compose up -d api`, and set the webhook URL to
+   `https://paws.money/api/v1/webhooks/coinbase`. Until then deposits are
+   503 by design.
+3. Make yourself admin: `docker compose exec postgres psql -U paws -d paws
    -c "UPDATE users SET role='admin' WHERE username='<you>'"`.
-7. Decommission the PHP vhost (redirect to the new site). Do NOT run both
-   against the same domain.
+
+Note: the legacy PHP app is not deployed anywhere reachable (domain was
+dead); nothing to decommission. Also: `app.domainshots.ai` on apps2 was
+found already broken (backend port 3000 not listening) BEFORE any changes
+tonight — untouched, flagging for a separate look.
 
 Deferred (come back post-cutover, no downtime): tournaments, breeding, quests,
 social, adventures, marketplace, AI generator, metaverse, desktop app, CLI.
