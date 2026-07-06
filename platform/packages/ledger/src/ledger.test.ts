@@ -11,7 +11,8 @@ import {
   transfer,
 } from './index.js';
 
-const TEST_URL = process.env['TEST_DATABASE_URL'] ?? 'postgres://localhost:5432/paws_test';
+const TEST_URL =
+  process.env['TEST_DATABASE_URL'] ?? 'postgres://localhost:5432/paws_test_ledger';
 
 let handle: DbHandle;
 let userId: string;

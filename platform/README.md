@@ -12,9 +12,9 @@ Fastify + Postgres + Drizzle backend, Preact web client. The legacy PHP app
 | `@paws/ledger` | Double-entry ledger: idempotency keys, row-locked overdraft checks | ✅ 10 tests |
 | `@paws/auth` | Argon2id passwords, CSPRNG session tokens hashed at rest, sealed TOTP 2FA | ✅ 12 tests |
 | `@paws/payments` | Coinbase Commerce deposits, manually-reviewed withdrawals | ✅ 14 tests (HTTP routes not wired yet) |
-| `@paws/api` | Fastify server: auth, pets, store, inventory, balances | 🚧 in progress |
-| `@paws/core` | Typed API client SDK (browser + node) | 🚧 in progress |
-| `@paws/web` | Preact SPA: login, dashboard, pets, store, wallet | 🚧 in progress |
+| `@paws/api` | Fastify server: auth, pets, store, wallet, admin queue | ✅ 26 tests |
+| `@paws/core` | Typed API client SDK (browser + node) | ✅ 16 tests |
+| `@paws/web` | Preact SPA: login, dashboard, pets, store, wallet | ✅ builds, 25KB |
 
 ## Money invariants (do not weaken)
 
@@ -58,17 +58,28 @@ pnpm --filter @paws/web dev   # Vite on :5173, proxies /api -> :3000
 Required env for production: `DATABASE_URL`, `AUTH_SECRET` (32-byte base64),
 `COINBASE_API_KEY`, `COINBASE_WEBHOOK_SECRET`, `PORT`.
 
-## Remaining for Tuesday-night cutover (Tier 1)
+## Status: Tier 1 complete — 78 tests green, Docker stack smoke-tested
 
-1. **@paws/api** — Fastify server + routes (in flight).
-2. **@paws/core + @paws/web** — SDK and web UI (in flight).
-3. **Wallet routes** — wire `@paws/payments` into the API:
-   `POST /wallet/deposit` (createCharge + createDeposit), `POST /webhooks/coinbase`
-   (raw-body HMAC verify → handleWebhookEvent), `POST/GET /wallet/withdrawals`,
-   admin review endpoints (requestWithdrawal/reviewWithdrawal/markWithdrawalPaid).
-4. **Integration smoke** — register → deposit (mocked webhook) → buy → feed.
-5. **Deploy** — Docker compose (postgres + api + static web), point the domain,
-   put the PHP app's pages behind a redirect.
+The full flow was verified through the compose stack (nginx → api → postgres):
+seeded store items, register, derived balances, pet creation, fail-closed
+deposit (503 without Coinbase creds), SPA serving.
+
+## Tuesday-night cutover runbook
+
+1. On the server: `git clone -b v5-platform`, `cd platform`.
+2. Create `.env`: `POSTGRES_PASSWORD` (strong), `AUTH_SECRET`
+   (`openssl rand -base64 32`), `COINBASE_API_KEY`, `COINBASE_WEBHOOK_SECRET`,
+   optional `WEB_PORT`.
+3. `docker compose up -d --build` — migrations and seed run on api boot.
+4. Configure the Coinbase Commerce webhook to POST
+   `https://paws.money/api/v1/webhooks/coinbase`.
+5. Point the domain / reverse proxy at the `web` service (port 8080 by
+   default). TLS terminates at your proxy — the API sets no cookies; the
+   bearer token flow works unchanged behind HTTPS.
+6. Make yourself admin: `docker compose exec postgres psql -U paws -d paws
+   -c "UPDATE users SET role='admin' WHERE username='<you>'"`.
+7. Decommission the PHP vhost (redirect to the new site). Do NOT run both
+   against the same domain.
 
 Deferred (come back post-cutover, no downtime): tournaments, breeding, quests,
 social, adventures, marketplace, AI generator, metaverse, desktop app, CLI.
