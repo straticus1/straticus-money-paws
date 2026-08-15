@@ -1,29 +1,32 @@
 # Money Paws - Git Ignore File
 
 # Configuration files with sensitive data
-config/database.php
+legacy/config/database.php
 .env
 .env.local
 .env.production
 
 # Uploaded files and user content
-uploads/*
-!uploads/.gitkeep
-uploads/pets/*
-!uploads/pets/.gitkeep
-uploads/ai-generated/*
-!uploads/ai-generated/.gitkeep
-uploads/temp/*
-!uploads/temp/.gitkeep
+legacy/uploads/*
+!legacy/uploads/.gitkeep
+legacy/uploads/pets/*
+!legacy/uploads/pets/.gitkeep
+legacy/uploads/ai-generated/*
+!legacy/uploads/ai-generated/.gitkeep
+legacy/uploads/temp/*
+!legacy/uploads/temp/.gitkeep
 
 # Composer dependencies
-vendor/
-composer.lock
+legacy/vendor/
+legacy/composer.lock
 
 # Node.js dependencies (desktop app)
-gui/desktop/node_modules/
-gui/desktop/dist/
-gui/web/node_modules/
+legacy/gui/desktop/node_modules/
+legacy/gui/desktop/dist/
+legacy/gui/web/node_modules/
+platform/node_modules/
+platform/packages/*/node_modules/
+platform/packages/*/dist/
 
 # IDE and editor files
 .vscode/
@@ -49,11 +52,11 @@ Thumbs.db
 # Database files (local development)
 *.sqlite
 *.db
-database/paws_money_testing.sqlite
+legacy/database/paws_money_testing.sqlite
 
 # CLI configuration and session files
-cli/config.json
-cli/session.json
+legacy/cli/config.json
+legacy/cli/session.json
 
 # Terraform generated files (if using infrastructure as code)
 terraform/*.tfstate
@@ -72,8 +75,8 @@ tmp/
 temp/
 
 # Build artifacts
-gui/desktop/out/
-gui/desktop/build/
+legacy/gui/desktop/out/
+legacy/gui/desktop/build/
 
 # Package files
 *.zip
@@ -101,10 +104,14 @@ docker-compose.override.yml
 .env.testing
 
 # Generated documentation
-docs/api/generated/
-docs/build/
+legacy/docs/api/generated/
+legacy/docs/build/
 
 # Electron build artifacts
-gui/desktop/dist/
-gui/desktop/out/
-paws_prompt
+legacy/gui/desktop/dist/
+legacy/gui/desktop/out/
+legacy/paws_prompt
+
+legacy/vendor/
+**/node_modules/
+.omc/
