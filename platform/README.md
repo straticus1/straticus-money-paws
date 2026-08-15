@@ -1,8 +1,8 @@
 # paws.money v5 platform
 
-Greenfield TypeScript rewrite of the paws.money PHP app. pnpm monorepo,
-Fastify + Postgres + Drizzle backend, Preact web client. The legacy PHP app
-(repo root) is frozen — security patches only.
+Active TypeScript application replacing the original paws.money PHP app. pnpm
+monorepo, Fastify + Postgres + Drizzle backend, Preact web client. The legacy
+PHP app is archived in `../legacy/` and frozen — security patches only.
 
 ## Packages
 
