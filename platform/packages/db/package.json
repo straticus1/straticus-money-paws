@@ -18,7 +18,7 @@
     "seed": "tsx src/seed.ts"
   },
   "dependencies": {
-    "drizzle-orm": "^0.44.0",
+    "drizzle-orm": "^0.45.2",
     "pg": "^8.13.0"
   },
   "devDependencies": {

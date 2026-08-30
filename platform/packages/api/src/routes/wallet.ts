@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { desc, eq } from 'drizzle-orm';
-import { type Db, deposits, withdrawalRequests } from '@paws/db';
+import { type Db, deposits, securityAuditEvents, user2fa, withdrawalRequests } from '@paws/db';
+import { openSecret, verifyPassword, verifyTotp } from '@paws/auth';
 import {
   PaymentsError,
   createCharge,
@@ -13,6 +14,7 @@ import {
 } from '@paws/payments';
 import { LedgerError } from '@paws/ledger';
 import { z } from 'zod';
+import { requireAuthSecret } from '../util.js';
 
 const MIN_DEPOSIT_CENTS = 100n; // $1
 const MAX_DEPOSIT_CENTS = 1_000_000n; // $10,000
@@ -28,7 +30,9 @@ const withdrawBody = z.object({
   amountMinor: amountString,
   currency: z.literal('USD'),
   destination: z.string().min(5).max(200),
-});
+  currentPassword: z.string().min(1).max(512),
+  totp: z.string().max(16).optional(),
+}).strict();
 
 const reviewBody = z.object({
   approve: z.boolean(),
@@ -123,12 +127,32 @@ export function registerWalletRoutes(app: FastifyInstance, db: Db, deps: WalletD
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request' });
     }
+    const passwordOk = await verifyPassword(request.user!.passwordHash, parsed.data.currentPassword);
+    if (!passwordOk) {
+      await db.insert(securityAuditEvents).values({
+        userId: request.user!.id,
+        eventType: 'wallet.withdrawal_reauth_failed',
+      });
+      return reply.code(401).send({ error: 'reauthentication_failed' });
+    }
+    const twoFactor = (await db.select().from(user2fa).where(eq(user2fa.userId, request.user!.id)))[0];
+    if (twoFactor?.enabled) {
+      const secret = openSecret(twoFactor.totpSecret, requireAuthSecret());
+      if (!parsed.data.totp || !verifyTotp(secret, parsed.data.totp)) {
+        return reply.code(401).send({ error: 'totp_required' });
+      }
+    }
     try {
       const id = await requestWithdrawal(db, {
         userId: request.user!.id,
         amountMinor: BigInt(parsed.data.amountMinor),
         currency: parsed.data.currency,
         destination: parsed.data.destination,
+      });
+      await db.insert(securityAuditEvents).values({
+        userId: request.user!.id,
+        eventType: 'wallet.withdrawal_requested',
+        metadata: { withdrawalId: id, currency: parsed.data.currency },
       });
       return reply.code(201).send({ id, status: 'pending' });
     } catch (err) {

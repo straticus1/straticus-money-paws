@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { ApiError } from '@paws/core';
 import { Notice } from '../components/Notice';
-import { client, navigate, setToken } from '../lib/api';
+import { client, navigate } from '../lib/api';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -16,8 +16,7 @@ export function Login() {
     setLoading(true);
     setError(null);
     try {
-      const result = await client.login(email, password, showTotp ? totp : undefined);
-      setToken(result.token);
+      await client.login(email, password, showTotp ? totp : undefined);
       navigate('/');
     } catch (e) {
       if (e instanceof ApiError && e.code === 'totp_required') {

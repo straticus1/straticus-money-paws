@@ -8,6 +8,8 @@ declare module 'fastify' {
   interface FastifyRequest {
     // Set by the global auth preHandler. Null on public routes with no token.
     user: User | null;
+    authMode: 'bearer' | 'cookie' | 'none';
+    sessionToken: string | null;
   }
   interface FastifyContextConfig {
     // Routes opt OUT of auth by setting this. Absence means auth required

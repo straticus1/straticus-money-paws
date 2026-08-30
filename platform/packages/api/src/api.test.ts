@@ -396,6 +396,7 @@ describe('2fa', () => {
       method: 'POST',
       url: '/api/v1/auth/2fa/setup',
       headers: auth(token),
+      payload: { currentPassword: 'correct horse battery' },
     });
     expect(setup.statusCode).toBe(200);
     const secret = setup.json().secret as string;

@@ -12,7 +12,7 @@
   "dependencies": {
     "@paws/db": "workspace:*",
     "@paws/ledger": "workspace:*",
-    "drizzle-orm": "^0.44.0",
+    "drizzle-orm": "^0.45.2",
     "pg": "^8.13.0"
   },
   "devDependencies": {

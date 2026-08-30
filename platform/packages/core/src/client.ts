@@ -1,8 +1,10 @@
 import { ApiError } from './error.js';
 import type {
   AuthResponse,
+  AccountSettings,
   Balance,
   InventoryItem,
+  LeaderboardEntry,
   LanternLinesAction,
   LanternLinesResponse,
   MidnightPantryAction,
@@ -16,21 +18,25 @@ import type {
   StoreItem,
   TrailTailsAction,
   TrailTailsResponse,
+  Trophy,
   User,
 } from './types.js';
 
 export interface PawsClientOptions {
   baseUrl: string;
-  getToken: () => string | null;
+  getToken?: () => string | null;
+  useCookies?: boolean;
 }
 
 export class PawsClient {
   private readonly baseUrl: string;
   private readonly getToken: () => string | null;
+  private readonly useCookies: boolean;
 
   constructor(opts: PawsClientOptions) {
     this.baseUrl = opts.baseUrl;
-    this.getToken = opts.getToken;
+    this.getToken = opts.getToken ?? (() => null);
+    this.useCookies = opts.useCookies ?? false;
   }
 
   private async request<T>(
@@ -48,10 +54,14 @@ export class PawsClient {
     if (token !== null) {
       headers['Authorization'] = `Bearer ${token}`;
     }
+    if (this.useCookies && (path === '/api/v1/auth/login' || path === '/api/v1/auth/register')) {
+      headers['X-Paws-Session-Mode'] = 'cookie';
+    }
 
     const res = await fetch(`${this.baseUrl}${path}`, {
       method,
       headers,
+      credentials: this.useCookies ? 'same-origin' : 'omit',
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
 
@@ -105,6 +115,28 @@ export class PawsClient {
   async inventory(): Promise<InventoryItem[]> {
     const response = await this.request<{ items: InventoryItem[] }>('GET', '/api/v1/me/inventory');
     return response.items;
+  }
+
+  async settings(): Promise<AccountSettings> {
+    const response = await this.request<{ settings: AccountSettings }>('GET', '/api/v1/me/settings');
+    return response.settings;
+  }
+
+  async updateSettings(input: Pick<AccountSettings, 'leaderboardOptIn' | 'trophyShowcase'>): Promise<void> {
+    await this.request('PUT', '/api/v1/me/settings', input);
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ changed: true; token?: string }> {
+    return this.request('POST', '/api/v1/me/password', { currentPassword, newPassword });
+  }
+
+  async trophies(): Promise<Trophy[]> {
+    const response = await this.request<{ trophies: Trophy[] }>('GET', '/api/v1/me/trophies');
+    return response.trophies;
+  }
+
+  async leaderboard(): Promise<{ entries: LeaderboardEntry[]; scoring: string }> {
+    return this.request('GET', '/api/v1/leaderboard');
   }
 
   async pets(): Promise<Pet[]> {

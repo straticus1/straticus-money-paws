@@ -14,7 +14,13 @@ import {
 import { ensureUserAccount } from '@paws/ledger';
 import { z } from 'zod';
 import { toPublicUser } from '../types.js';
-import { bearerToken, requireAuthSecret, isUniqueViolation } from '../util.js';
+import {
+  clearSessionCookie,
+  requireAuthSecret,
+  isUniqueViolation,
+  setSessionCookie,
+  wantsCookieSession,
+} from '../util.js';
 
 const registerBody = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
@@ -35,6 +41,10 @@ const loginBody = z.object({
 const totpBody = z.object({
   totp: z.string().max(16),
 });
+
+const totpSetupBody = z.object({
+  currentPassword: z.string().min(1).max(512),
+}).strict();
 
 // Constant-work guard against a timing oracle on unknown emails. Computed once,
 // lazily, then reused; verifying against it costs the same as a real verify.
@@ -87,10 +97,12 @@ export function registerAuthRoutes(app: FastifyInstance, db: Db): void {
       await ensureUserAccount(db, userId, 'PAWS');
       await ensureUserAccount(db, userId, 'USD');
 
-      return reply.code(201).send({
-        token,
-        user: { id: userId, email, username, role },
-      });
+      const user = { id: userId, email, username, role };
+      if (wantsCookieSession(request)) {
+        setSessionCookie(reply, token);
+        return reply.code(201).send({ user });
+      }
+      return reply.code(201).send({ token, user });
     },
   );
 
@@ -131,20 +143,29 @@ export function registerAuthRoutes(app: FastifyInstance, db: Db): void {
       }
 
       const { token } = await createSession(db, user.id);
+      if (wantsCookieSession(request)) {
+        setSessionCookie(reply, token);
+        return reply.send({ user: toPublicUser(user) });
+      }
       return reply.send({ token, user: toPublicUser(user) });
     },
   );
 
   app.post('/auth/logout', async (request, reply) => {
-    const token = bearerToken(request);
+    const token = request.sessionToken;
     if (token) {
       await revokeSession(db, token);
     }
+    clearSessionCookie(reply);
     return reply.code(204).send();
   });
 
   app.post('/auth/2fa/setup', async (request, reply) => {
     const user = request.user!;
+    const parsed = totpSetupBody.safeParse(request.body);
+    if (!parsed.success || !await verifyPassword(user.passwordHash, parsed.data.currentPassword)) {
+      return reply.code(401).send({ error: 'reauthentication_failed' });
+    }
     const secret = generateTotpSecret();
     const sealed = sealSecret(secret, requireAuthSecret());
     await db

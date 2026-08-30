@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { formatMinor } from '@paws/core';
 import type { Balance } from '@paws/core';
-import { call, clearToken, client, navigate } from '../lib/api';
+import { call, client, navigate } from '../lib/api';
 
 export function Header() {
   const [balances, setBalances] = useState<Balance[]>([]);
@@ -18,7 +18,6 @@ export function Header() {
     call(() => client.logout()).catch(() => {
       // ignore logout errors — always clear locally
     });
-    clearToken();
     navigate('/login');
   }
 
@@ -32,15 +31,17 @@ export function Header() {
           </span>
         ))}
       </nav>
-      <a href="#/store" style="font-size:0.88rem;color:var(--accent);text-decoration:none;font-weight:600;">
+      <a href="#/store" class="header__link">
         Store
       </a>
-      <a href="#/games" style="font-size:0.88rem;color:var(--accent);text-decoration:none;font-weight:600;">
+      <a href="#/games" class="header__link">
         Games
       </a>
-      <a href="#/wallet" style="font-size:0.88rem;color:var(--accent);text-decoration:none;font-weight:600;">
+      <a href="#/honors" class="header__link">Honors</a>
+      <a href="#/wallet" class="header__link">
         Wallet
       </a>
+      <a href="#/settings" class="header__link">Settings</a>
       <button class="btn btn--ghost" onClick={handleLogout}>
         Logout
       </button>

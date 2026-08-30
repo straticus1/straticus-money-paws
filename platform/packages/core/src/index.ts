@@ -3,8 +3,10 @@ export { PawsClient } from './client.js';
 export { formatMinor } from './format.js';
 export type {
   AuthResponse,
+  AccountSettings,
   Balance,
   InventoryItem,
+  LeaderboardEntry,
   LanternDirection,
   LanternLinesAction,
   LanternLinesGame,
@@ -40,6 +42,7 @@ export type {
   TrailTailsResponse,
   TrailTerrain,
   TrailTile,
+  Trophy,
   User,
 } from './types.js';
 export type { PawsClientOptions } from './client.js';

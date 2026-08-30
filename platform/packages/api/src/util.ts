@@ -1,4 +1,6 @@
-import type { FastifyRequest } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+
+export const SESSION_COOKIE_NAME = 'paws_session';
 
 /** Extract a Bearer token from the Authorization header, or null. */
 export function bearerToken(request: FastifyRequest): string | null {
@@ -8,6 +10,39 @@ export function bearerToken(request: FastifyRequest): string | null {
   }
   const token = header.slice('Bearer '.length).trim();
   return token.length > 0 ? token : null;
+}
+
+export function requestSessionToken(request: FastifyRequest): {
+  token: string | null;
+  mode: 'bearer' | 'cookie' | 'none';
+} {
+  const bearer = bearerToken(request);
+  if (bearer) return { token: bearer, mode: 'bearer' };
+  const cookie = request.cookies?.[SESSION_COOKIE_NAME];
+  return cookie ? { token: cookie, mode: 'cookie' } : { token: null, mode: 'none' };
+}
+
+export function wantsCookieSession(request: FastifyRequest): boolean {
+  return request.headers['x-paws-session-mode'] === 'cookie';
+}
+
+export function setSessionCookie(reply: FastifyReply, token: string): void {
+  reply.setCookie(SESSION_COOKIE_NAME, token, {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'strict',
+    secure: process.env['NODE_ENV'] === 'production',
+    maxAge: 60 * 60 * 24 * 14,
+  });
+}
+
+export function clearSessionCookie(reply: FastifyReply): void {
+  reply.clearCookie(SESSION_COOKIE_NAME, {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'strict',
+    secure: process.env['NODE_ENV'] === 'production',
+  });
 }
 
 /**

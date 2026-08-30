@@ -14,7 +14,7 @@ PHP app is archived in `../legacy/` and frozen — security patches only.
 | `@paws/payments` | Coinbase Commerce deposits, manually-reviewed withdrawals | ✅ 14 tests (HTTP routes not wired yet) |
 | `@paws/api` | Fastify server: auth, pets, six server-authoritative games, store, wallet, admin queue | ✅ tested |
 | `@paws/core` | Typed API client SDK (browser + node) | ✅ 24 tests |
-| `@paws/web` | Preact SPA: account, pets, store, wallet, and games | ✅ builds |
+| `@paws/web` | Preact SPA: account settings, honors, pets, store, wallet, and games | ✅ builds |
 
 ## Money invariants (do not weaken)
 
@@ -41,6 +41,9 @@ PHP app is archived in `../legacy/` and frozen — security patches only.
   rewards.
 - Security rules: `~/development/ads-fable-utils/SECURITY-RULES.md` is binding
   for anything touching crypto/auth/tokens/SQL/randomness.
+- Browser sessions use HttpOnly cookies, community rankings are private by
+  default, and the application security model is documented in
+  [`docs/SECURITY-HARDENING.md`](docs/SECURITY-HARDENING.md).
 
 ## Dev setup
 
@@ -68,7 +71,8 @@ pnpm --filter @paws/web dev   # Vite on :5173, proxies /api -> :3000
 ```
 
 Required env for production: `DATABASE_URL`, `AUTH_SECRET` (32-byte base64),
-`COINBASE_API_KEY`, `COINBASE_WEBHOOK_SECRET`, `PORT`.
+`WEB_ORIGIN` (the exact HTTPS site origin), `COINBASE_API_KEY`,
+`COINBASE_WEBHOOK_SECRET`, `PORT`.
 
 ### Bootstrap an admin account
 

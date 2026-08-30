@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { Notice } from '../components/Notice';
-import { client, navigate, setToken } from '../lib/api';
+import { client, navigate } from '../lib/api';
 
 export function Register() {
   const [email, setEmail] = useState('');
@@ -14,8 +14,7 @@ export function Register() {
     setLoading(true);
     setError(null);
     try {
-      const result = await client.register(email, username, password);
-      setToken(result.token);
+      await client.register(email, username, password);
       navigate('/');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Registration failed');

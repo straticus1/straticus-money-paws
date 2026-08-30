@@ -16,7 +16,7 @@ let adminToken: string;
 
 const providerFetch = (async () =>
   new Response(
-    JSON.stringify({ data: { id: `ch_${randomBytes(8).toString('hex')}`, hosted_url: 'https://commerce.example/pay' } }),
+    JSON.stringify({ data: { id: `ch_${randomBytes(8).toString('hex')}`, hosted_url: 'https://commerce.coinbase.com/charges/test' } }),
     { status: 201 },
   )) as typeof fetch;
 
@@ -166,13 +166,26 @@ describe('deposits', () => {
 });
 
 describe('withdrawals', () => {
+  it('requires password reauthentication before placing a hold', async () => {
+    await depositAndConfirm('1000');
+    const request = await app.inject({
+      method: 'POST',
+      url: '/api/v1/wallet/withdrawals',
+      headers: { authorization: `Bearer ${userToken}` },
+      payload: { amountMinor: '500', currency: 'USD', destination: 'bc1q-somewhere', currentPassword: 'wrong-password' },
+    });
+    expect(request.statusCode).toBe(401);
+    expect(request.json()).toEqual({ error: 'reauthentication_failed' });
+    expect(await usdBalance()).toBe('1000');
+  });
+
   it('request holds funds; admin denial refunds', async () => {
     await depositAndConfirm('5000');
     const req = await app.inject({
       method: 'POST',
       url: '/api/v1/wallet/withdrawals',
       headers: { authorization: `Bearer ${userToken}` },
-      payload: { amountMinor: '3000', currency: 'USD', destination: 'bc1q-somewhere' },
+      payload: { amountMinor: '3000', currency: 'USD', destination: 'bc1q-somewhere', currentPassword: 'a-strong-password' },
     });
     expect(req.statusCode).toBe(201);
     expect(await usdBalance()).toBe('2000');
@@ -194,7 +207,7 @@ describe('withdrawals', () => {
       method: 'POST',
       url: '/api/v1/wallet/withdrawals',
       headers: { authorization: `Bearer ${userToken}` },
-      payload: { amountMinor: '3000', currency: 'USD', destination: 'bc1q-somewhere' },
+      payload: { amountMinor: '3000', currency: 'USD', destination: 'bc1q-somewhere', currentPassword: 'a-strong-password' },
     });
     const { id } = req.json() as { id: string };
     const approve = await app.inject({
@@ -228,7 +241,7 @@ describe('withdrawals', () => {
       method: 'POST',
       url: '/api/v1/wallet/withdrawals',
       headers: { authorization: `Bearer ${userToken}` },
-      payload: { amountMinor: '1001', currency: 'USD', destination: 'bc1q-somewhere' },
+      payload: { amountMinor: '1001', currency: 'USD', destination: 'bc1q-somewhere', currentPassword: 'a-strong-password' },
     });
     expect(over.statusCode).toBe(402);
     expect(await usdBalance()).toBe('1000');
@@ -237,7 +250,7 @@ describe('withdrawals', () => {
       method: 'POST',
       url: '/api/v1/wallet/withdrawals',
       headers: { authorization: `Bearer ${userToken}` },
-      payload: { amountMinor: '500', currency: 'USD', destination: 'bc1q-somewhere' },
+      payload: { amountMinor: '500', currency: 'USD', destination: 'bc1q-somewhere', currentPassword: 'a-strong-password' },
     });
     const { id } = req.json() as { id: string };
     const asUser = await app.inject({
@@ -255,7 +268,7 @@ describe('withdrawals', () => {
       method: 'POST',
       url: '/api/v1/wallet/withdrawals',
       headers: { authorization: `Bearer ${userToken}` },
-      payload: { amountMinor: '500', currency: 'USD', destination: 'bc1q-somewhere' },
+      payload: { amountMinor: '500', currency: 'USD', destination: 'bc1q-somewhere', currentPassword: 'a-strong-password' },
     });
     const list = await app.inject({
       method: 'GET',

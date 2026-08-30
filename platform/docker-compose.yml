@@ -23,6 +23,7 @@ services:
       COINBASE_API_KEY: ${COINBASE_API_KEY:-}
       COINBASE_WEBHOOK_SECRET: ${COINBASE_WEBHOOK_SECRET:-}
       NODE_ENV: production
+      WEB_ORIGIN: ${WEB_ORIGIN:?set WEB_ORIGIN to the exact public site origin}
       PORT: "3000"
     depends_on:
       postgres:

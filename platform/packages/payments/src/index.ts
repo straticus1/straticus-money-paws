@@ -101,6 +101,18 @@ export async function createCharge(
   if (typeof data?.id !== 'string' || typeof data.hosted_url !== 'string') {
     throw new PaymentsError('coinbase response missing charge fields', 'PROVIDER_ERROR');
   }
+  if (!/^[A-Za-z0-9_-]{3,128}$/.test(data.id)) {
+    throw new PaymentsError('coinbase returned invalid charge id', 'PROVIDER_ERROR');
+  }
+  let hosted: URL;
+  try {
+    hosted = new URL(data.hosted_url);
+  } catch {
+    throw new PaymentsError('coinbase returned invalid hosted URL', 'PROVIDER_ERROR');
+  }
+  if (hosted.protocol !== 'https:' || hosted.hostname !== 'commerce.coinbase.com') {
+    throw new PaymentsError('coinbase returned an untrusted hosted URL', 'PROVIDER_ERROR');
+  }
   return { chargeId: data.id, hostedUrl: data.hosted_url };
 }
 

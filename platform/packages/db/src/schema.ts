@@ -34,6 +34,29 @@ export const user2fa = pgTable('user_2fa', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const userSettings = pgTable('user_settings', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  leaderboardOptIn: boolean('leaderboard_opt_in').notNull().default(false),
+  trophyShowcase: boolean('trophy_showcase').notNull().default(true),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const userTrophies = pgTable('user_trophies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  trophyKey: text('trophy_key').notNull(),
+  earnedAt: timestamp('earned_at', { withTimezone: true }).notNull().defaultNow(),
+  metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
+});
+
+export const securityAuditEvents = pgTable('security_audit_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  eventType: text('event_type').notNull(),
+  metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const pets = pgTable('pets', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),

@@ -47,8 +47,34 @@ export interface InventoryItem {
 }
 
 export interface AuthResponse {
-  token: string;
+  /** Present for bearer-token clients; browser cookie sessions intentionally omit it. */
+  token?: string;
   user: User;
+}
+
+export interface AccountSettings {
+  email: string;
+  username: string;
+  leaderboardOptIn: boolean;
+  trophyShowcase: boolean;
+  twoFactorEnabled: boolean;
+}
+
+export interface Trophy {
+  key: string;
+  name: string;
+  icon: string;
+  description: string;
+  earned: boolean;
+  earnedAt: string | null;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  username: string;
+  score: number;
+  completions: number;
+  stars: number;
 }
 
 export interface PawMatchCard {

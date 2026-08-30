@@ -247,7 +247,7 @@ describe('createCharge', () => {
     const fetchImpl = (async (url: string | URL | Request, init?: RequestInit) => {
       calls.push({ url: String(url), init: init! });
       return new Response(
-        JSON.stringify({ data: { id: 'ch_new', hosted_url: 'https://commerce.example/ch_new' } }),
+        JSON.stringify({ data: { id: 'ch_new', hosted_url: 'https://commerce.coinbase.com/charges/ch_new' } }),
         { status: 201 },
       );
     }) as typeof fetch;
@@ -260,7 +260,7 @@ describe('createCharge', () => {
       metadata: { userId: 'u1' },
       fetchImpl,
     });
-    expect(result).toEqual({ chargeId: 'ch_new', hostedUrl: 'https://commerce.example/ch_new' });
+    expect(result).toEqual({ chargeId: 'ch_new', hostedUrl: 'https://commerce.coinbase.com/charges/ch_new' });
     const sent = JSON.parse(String(calls[0]!.init.body));
     expect(sent.local_price).toEqual({ amount: '12.34', currency: 'USD' });
   });
@@ -270,6 +270,9 @@ describe('createCharge', () => {
     const err500 = (async () => new Response('oops', { status: 500 })) as typeof fetch;
     const badJson = (async () => new Response('not-json', { status: 201 })) as typeof fetch;
     const missing = (async () => new Response(JSON.stringify({ data: {} }), { status: 201 })) as typeof fetch;
+    const wateringHole = (async () => new Response(JSON.stringify({
+      data: { id: 'ch_evil', hosted_url: 'https://lookalike.example/steal-wallet' },
+    }), { status: 201 })) as typeof fetch;
     const base = {
       apiKey: 'k',
       name: 'D',
@@ -285,6 +288,9 @@ describe('createCharge', () => {
       code: 'PROVIDER_ERROR',
     });
     await expect(createCharge({ ...base, fetchImpl: missing })).rejects.toMatchObject({
+      code: 'PROVIDER_ERROR',
+    });
+    await expect(createCharge({ ...base, fetchImpl: wateringHole })).rejects.toMatchObject({
       code: 'PROVIDER_ERROR',
     });
     await expect(createCharge({ ...base, amountMinor: 0n })).rejects.toMatchObject({
