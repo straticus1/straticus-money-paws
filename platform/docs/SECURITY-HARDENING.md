@@ -22,11 +22,13 @@ derives those from owner-scoped database records.
 
 | Threat | Controls in this repository |
 |---|---|
-| XSS and token theft | The SPA uses an `HttpOnly`, `SameSite=Strict` cookie and never stores its session secret in `localStorage`. Preact escapes rendered text. CSP permits scripts only from this origin; objects, frames, and external connections are blocked. No third-party scripts, fonts, or pixels are loaded. |
+| XSS and token theft | The SPA uses a 24-hour `HttpOnly`, `SameSite=Strict` cookie and never stores its session secret in `localStorage`. Preact escapes rendered text. CSP permits scripts only from this origin and requires Trusted Types; objects, frames, and external connections are blocked. No third-party scripts, fonts, or pixels are loaded. |
 | CSRF / watering-hole requests | Cookie-authenticated mutations require an exact trusted `Origin`; production origins come from `WEB_ORIGIN`. Strict SameSite cookies provide a second layer. CORS is allowlisted. |
-| Pass-the-hash / session replay | Passwords use Argon2id and are never accepted as hashes. Raw session tokens are random, stored only as SHA-256 digests server-side, revocable, and unavailable to browser JavaScript. Password changes revoke every session. Sensitive wallet and 2FA setup operations require the current password again. |
-| Dependency watering hole | Production pages load no remote executable content. pnpm's committed lockfile and `--frozen-lockfile` make container builds reproducible; dependency audits are part of release verification. Base images should be refreshed and re-scanned regularly. |
-| Wallet tampering | Bigint minor units, double-entry postings, append-only ledger triggers, row locks, idempotency keys, bounds, manual withdrawal review, re-authentication, and TOTP when enabled. Webhooks are verified over raw bytes with constant-time HMAC comparison. |
+| Pass-the-hash / session replay | Passwords use Argon2id and are never accepted as hashes. Raw session tokens are random, stored only as SHA-256 digests server-side, revocable, and unavailable to browser JavaScript. Password changes revoke every session. Wallet requests, admin review, payout confirmation, and 2FA setup require the current password again and TOTP when enabled. |
+| Dependency watering hole | Production pages load no remote executable content. pnpm's committed lockfile and `--frozen-lockfile` make builds reproducible. CI audits production dependencies, and Dependabot tracks package and base-image updates. Application base images are digest-pinned. |
+| Wallet tampering | Bigint minor units, double-entry postings, append-only ledger and security-audit triggers, row locks, idempotent withdrawal requests, network-specific destination validation, manual review, admin step-up authentication, and requester/reviewer separation of duties. Webhooks are verified over raw bytes with constant-time HMAC comparison. |
+| DevTools parameter changes | The browser is treated as attacker-controlled. Strict request schemas reject extra or malformed fields, owner/admin authorization is derived from the session, and balances, prices, rewards, roles, withdrawal state transitions, and ledger postings are computed transactionally by the backend. |
+| Source and cache exposure | Browser JavaScript is necessarily downloadable, but production images contain compiled assets rather than `.tsx` or source maps. nginx returns 404 for source probes, revalidates SPA HTML, and long-caches only fingerprinted assets. No secret or authority is placed in frontend code. |
 | Malicious payment redirect | Provider charge IDs are bounded and checkout URLs must use HTTPS on `commerce.coinbase.com`. |
 | Leaderboard privacy | Participation defaults off. Only username and aggregated verified-play totals are returned. Email, IDs, balances, destinations, and reward amounts are excluded. |
 | Forged trophies | There is no trophy-write API. Awards are idempotently derived from authoritative account, pet, and completed-game rows. |
@@ -50,7 +52,11 @@ derives those from owner-scoped database records.
   attributes. Inline scripts remain forbidden. Moving all dynamic visuals to
   classes would allow tightening `style-src` further.
 - A compromised same-origin server or malicious browser extension can act as
-  the signed-in user. Hardware-bound/WebAuthn sessions are not implemented.
+  the signed-in user. Step-up checks limit wallet impact, but hardware-bound
+  WebAuthn sessions are not implemented.
+- Destination checks validate syntax and network, not address ownership or all
+  chain-specific checksums. Operators must confirm the address and network out
+  of band before sending irreversible funds.
 - Rate limiting is per API instance. A distributed deployment needs a shared
   limiter and edge/WAF controls.
 - Browser automation can solve legal game actions; the shared daily PAWS cap

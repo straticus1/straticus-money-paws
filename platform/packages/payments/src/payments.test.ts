@@ -134,14 +134,24 @@ describe('deposits', () => {
 });
 
 describe('withdrawals', () => {
+  const destination = 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh';
+  let requestSequence = 0;
+
+  function withdrawalInput(amountMinor: bigint) {
+    requestSequence += 1;
+    return {
+      userId,
+      amountMinor,
+      currency: 'USD' as const,
+      network: 'bitcoin' as const,
+      destination,
+      requestKey: `test-${requestSequence}`,
+    };
+  }
+
   it('holds funds at request time', async () => {
     await fundUser(1000n);
-    await requestWithdrawal(handle.db, {
-      userId,
-      amountMinor: 600n,
-      currency: 'USD',
-      destination: 'bc1q-test-destination',
-    });
+    await requestWithdrawal(handle.db, withdrawalInput(600n));
     expect(await getBalance(handle.db, userUsd)).toBe(400n);
   });
 
@@ -149,12 +159,7 @@ describe('withdrawals', () => {
   it('rejects overdraw requests atomically', async () => {
     await fundUser(1000n);
     await expect(
-      requestWithdrawal(handle.db, {
-        userId,
-        amountMinor: 1001n,
-        currency: 'USD',
-        destination: 'bc1q-test-destination',
-      }),
+      requestWithdrawal(handle.db, withdrawalInput(1001n)),
     ).rejects.toMatchObject({ code: 'INSUFFICIENT_FUNDS' });
     expect(await getBalance(handle.db, userUsd)).toBe(1000n);
     const rows = await handle.db.execute(sql`SELECT count(*)::int AS n FROM withdrawal_requests`);
@@ -163,12 +168,7 @@ describe('withdrawals', () => {
 
   it('denial refunds the hold', async () => {
     await fundUser(1000n);
-    const id = await requestWithdrawal(handle.db, {
-      userId,
-      amountMinor: 600n,
-      currency: 'USD',
-      destination: 'bc1q-test-destination',
-    });
+    const { id } = await requestWithdrawal(handle.db, withdrawalInput(600n));
     const verdict = await reviewWithdrawal(handle.db, {
       withdrawalId: id,
       reviewerId: adminId,
@@ -182,12 +182,7 @@ describe('withdrawals', () => {
   // Negative: a withdrawal cannot be reviewed twice.
   it('rejects double review', async () => {
     await fundUser(1000n);
-    const id = await requestWithdrawal(handle.db, {
-      userId,
-      amountMinor: 600n,
-      currency: 'USD',
-      destination: 'bc1q-test-destination',
-    });
+    const { id } = await requestWithdrawal(handle.db, withdrawalInput(600n));
     await reviewWithdrawal(handle.db, { withdrawalId: id, reviewerId: adminId, approve: true });
     await expect(
       reviewWithdrawal(handle.db, { withdrawalId: id, reviewerId: adminId, approve: false }),
@@ -197,17 +192,12 @@ describe('withdrawals', () => {
 
   it('paid flow moves the hold to treasury and is not repeatable', async () => {
     await fundUser(1000n);
-    const id = await requestWithdrawal(handle.db, {
-      userId,
-      amountMinor: 600n,
-      currency: 'USD',
-      destination: 'bc1q-test-destination',
-    });
+    const { id } = await requestWithdrawal(handle.db, withdrawalInput(600n));
     await reviewWithdrawal(handle.db, { withdrawalId: id, reviewerId: adminId, approve: true });
-    await markWithdrawalPaid(handle.db, id);
+    await markWithdrawalPaid(handle.db, id, adminId);
     const withholding = await ensureSystemAccount(handle.db, 'withholding', 'USD');
     expect(await getBalance(handle.db, withholding)).toBe(0n);
-    await expect(markWithdrawalPaid(handle.db, id)).rejects.toMatchObject({
+    await expect(markWithdrawalPaid(handle.db, id, adminId)).rejects.toMatchObject({
       code: 'ALREADY_REVIEWED',
     });
   });
@@ -215,29 +205,30 @@ describe('withdrawals', () => {
   // Negative: garbage inputs fail closed.
   it('rejects invalid amounts and destinations', async () => {
     await expect(
-      requestWithdrawal(handle.db, {
-        userId,
-        amountMinor: 0n,
-        currency: 'USD',
-        destination: 'bc1q-test-destination',
-      }),
+      requestWithdrawal(handle.db, withdrawalInput(0n)),
     ).rejects.toMatchObject({ code: 'INVALID_AMOUNT' });
     await expect(
       requestWithdrawal(handle.db, {
-        userId,
-        amountMinor: 100n,
-        currency: 'USD',
+        ...withdrawalInput(100n),
         destination: 'ab',
       }),
     ).rejects.toMatchObject({ code: 'INVALID_DESTINATION' });
     await expect(
       requestWithdrawal(handle.db, {
-        userId,
-        amountMinor: 100n,
-        currency: 'USD',
+        ...withdrawalInput(100n),
         destination: 'x'.repeat(300),
       }),
     ).rejects.toMatchObject({ code: 'INVALID_DESTINATION' });
+  });
+
+  it('returns the same request without holding funds twice', async () => {
+    await fundUser(1000n);
+    const input = withdrawalInput(600n);
+    const first = await requestWithdrawal(handle.db, input);
+    const replay = await requestWithdrawal(handle.db, input);
+    expect(first.alreadyRequested).toBe(false);
+    expect(replay).toEqual({ id: first.id, alreadyRequested: true });
+    expect(await getBalance(handle.db, userUsd)).toBe(400n);
   });
 });
 

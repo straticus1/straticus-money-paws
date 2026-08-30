@@ -75,7 +75,7 @@ export function tokenDigest(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
-const DEFAULT_SESSION_TTL_HOURS = 24 * 14;
+const DEFAULT_SESSION_TTL_HOURS = 24;
 
 export async function createSession(
   db: Db,

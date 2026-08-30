@@ -12,7 +12,7 @@
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
-import { type Db, deposits, withdrawalRequests } from '@paws/db';
+import { type Db, deposits, securityAuditEvents, withdrawalRequests } from '@paws/db';
 import {
   ensureSystemAccount,
   ensureUserAccount,
@@ -26,8 +26,10 @@ export class PaymentsError extends Error {
     readonly code:
       | 'INVALID_AMOUNT'
       | 'INVALID_DESTINATION'
+      | 'IDEMPOTENCY_CONFLICT'
       | 'NOT_FOUND'
       | 'ALREADY_REVIEWED'
+      | 'SELF_REVIEW'
       | 'PROVIDER_ERROR',
   ) {
     super(message);
@@ -226,16 +228,51 @@ export async function handleWebhookEvent(db: Db, event: CoinbaseEvent): Promise<
 
 const MAX_DESTINATION_LENGTH = 200;
 
+export type WalletNetwork = 'bitcoin' | 'ethereum' | 'solana';
+
+/**
+ * Format validation is deliberately network-specific. It catches parameter
+ * substitution and obvious typos; the human payout process must still verify
+ * the full address and network out of band before sending irreversible funds.
+ */
+export function isValidWalletDestination(network: WalletNetwork, destination: string): boolean {
+  const value = destination.trim();
+  if (value.length < 5 || value.length > MAX_DESTINATION_LENGTH) return false;
+  switch (network) {
+    case 'bitcoin':
+      return /^(bc1[ac-hj-np-z02-9]{11,71}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})$/i.test(value);
+    case 'ethereum':
+      return /^0x[0-9a-fA-F]{40}$/.test(value);
+    case 'solana':
+      return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value);
+  }
+}
+
+export interface WithdrawalRequestResult {
+  id: string;
+  alreadyRequested: boolean;
+}
+
 export async function requestWithdrawal(
   db: Db,
-  input: { userId: string; amountMinor: bigint; currency: Currency; destination: string },
-): Promise<string> {
+  input: {
+    userId: string;
+    amountMinor: bigint;
+    currency: Currency;
+    network: WalletNetwork;
+    destination: string;
+    requestKey: string;
+  },
+): Promise<WithdrawalRequestResult> {
   if (input.amountMinor <= 0n) {
     throw new PaymentsError('withdrawal amount must be positive', 'INVALID_AMOUNT');
   }
   const destination = input.destination.trim();
-  if (destination.length < 5 || destination.length > MAX_DESTINATION_LENGTH) {
+  if (!isValidWalletDestination(input.network, destination)) {
     throw new PaymentsError('invalid destination', 'INVALID_DESTINATION');
+  }
+  if (!input.requestKey || input.requestKey.length > 200) {
+    throw new PaymentsError('invalid idempotency key', 'IDEMPOTENCY_CONFLICT');
   }
   return db.transaction(async (tx) => {
     const inserted = await tx
@@ -244,10 +281,29 @@ export async function requestWithdrawal(
         userId: input.userId,
         amountMinor: input.amountMinor,
         currency: input.currency,
+        destinationNetwork: input.network,
         destination,
+        requestKey: input.requestKey,
       })
+      .onConflictDoNothing({ target: [withdrawalRequests.userId, withdrawalRequests.requestKey] })
       .returning({ id: withdrawalRequests.id });
-    const id = inserted[0]!.id;
+    if (!inserted[0]) {
+      const existing = (await tx.select().from(withdrawalRequests).where(and(
+        eq(withdrawalRequests.userId, input.userId),
+        eq(withdrawalRequests.requestKey, input.requestKey),
+      )))[0];
+      if (!existing) throw new PaymentsError('idempotency race lost', 'IDEMPOTENCY_CONFLICT');
+      if (
+        existing.amountMinor !== input.amountMinor ||
+        existing.currency !== input.currency ||
+        existing.destinationNetwork !== input.network ||
+        existing.destination !== destination
+      ) {
+        throw new PaymentsError('idempotency key reused with different input', 'IDEMPOTENCY_CONFLICT');
+      }
+      return { id: existing.id, alreadyRequested: true };
+    }
+    const id = inserted[0].id;
     const userAccount = await ensureUserAccount(tx as unknown as Db, input.userId, input.currency);
     const withholding = await ensureSystemAccount(
       tx as unknown as Db,
@@ -264,7 +320,12 @@ export async function requestWithdrawal(
       amountMinor: input.amountMinor,
       metadata: { withdrawalId: id },
     });
-    return id;
+    await tx.insert(securityAuditEvents).values({
+      userId: input.userId,
+      eventType: 'wallet.withdrawal_requested',
+      metadata: { withdrawalId: id, currency: input.currency, network: input.network },
+    });
+    return { id, alreadyRequested: false };
   });
 }
 
@@ -280,6 +341,9 @@ export async function reviewWithdrawal(
       .for('update');
     const row = rows[0];
     if (!row) throw new PaymentsError('withdrawal not found', 'NOT_FOUND');
+    if (row.userId === input.reviewerId) {
+      throw new PaymentsError('request owner cannot review their own withdrawal', 'SELF_REVIEW');
+    }
     if (row.status !== 'pending') {
       throw new PaymentsError(`withdrawal is ${row.status}`, 'ALREADY_REVIEWED');
     }
@@ -308,12 +372,21 @@ export async function reviewWithdrawal(
         metadata: { withdrawalId: row.id },
       });
     }
+    await tx.insert(securityAuditEvents).values({
+      userId: input.reviewerId,
+      eventType: input.approve ? 'wallet.withdrawal_approved' : 'wallet.withdrawal_denied',
+      metadata: { withdrawalId: row.id },
+    });
     return input.approve ? 'approved' : 'denied';
   });
 }
 
 /** After the operator has actually sent funds: withholding -> treasury. */
-export async function markWithdrawalPaid(db: Db, withdrawalId: string): Promise<void> {
+export async function markWithdrawalPaid(
+  db: Db,
+  withdrawalId: string,
+  actorId: string,
+): Promise<void> {
   await db.transaction(async (tx) => {
     const rows = await tx
       .select()
@@ -322,6 +395,9 @@ export async function markWithdrawalPaid(db: Db, withdrawalId: string): Promise<
       .for('update');
     const row = rows[0];
     if (!row) throw new PaymentsError('withdrawal not found', 'NOT_FOUND');
+    if (row.userId === actorId) {
+      throw new PaymentsError('request owner cannot mark their own withdrawal paid', 'SELF_REVIEW');
+    }
     if (row.status !== 'approved') {
       throw new PaymentsError(`withdrawal is ${row.status}, expected approved`, 'ALREADY_REVIEWED');
     }
@@ -341,6 +417,11 @@ export async function markWithdrawalPaid(db: Db, withdrawalId: string): Promise<
       fromAccountId: withholding,
       toAccountId: treasury,
       amountMinor: row.amountMinor,
+      metadata: { withdrawalId: row.id },
+    });
+    await tx.insert(securityAuditEvents).values({
+      userId: actorId,
+      eventType: 'wallet.withdrawal_marked_paid',
       metadata: { withdrawalId: row.id },
     });
   });

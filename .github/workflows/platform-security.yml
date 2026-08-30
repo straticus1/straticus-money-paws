@@ -1,0 +1,55 @@
+name: Platform security
+
+on:
+  pull_request:
+    paths:
+      - "platform/**"
+      - ".github/workflows/platform-security.yml"
+  push:
+    branches: [main, v5-platform]
+    paths:
+      - "platform/**"
+      - ".github/workflows/platform-security.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: paws_test
+          POSTGRES_USER: paws
+          POSTGRES_PASSWORD: test-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U paws -d paws_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://paws:test-only-password@localhost:5432/paws_test
+      AUTH_SECRET: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      WEB_ORIGIN: http://localhost:8092
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --prod
+      - run: pnpm -r build
+      - run: pnpm -r typecheck
+      - run: pnpm --filter @paws/core test
+      - run: pnpm --filter @paws/auth test
+      - run: pnpm --filter @paws/ledger test
+      - run: pnpm --filter @paws/payments test
+      - run: pnpm --filter @paws/api test

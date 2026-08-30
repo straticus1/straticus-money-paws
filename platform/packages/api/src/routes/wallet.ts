@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { desc, eq } from 'drizzle-orm';
-import { type Db, deposits, securityAuditEvents, user2fa, withdrawalRequests } from '@paws/db';
+import { type Db, deposits, securityAuditEvents, user2fa, withdrawalRequests, type User } from '@paws/db';
 import { openSecret, verifyPassword, verifyTotp } from '@paws/auth';
 import {
   PaymentsError,
@@ -29,15 +29,24 @@ const depositBody = z.object({
 const withdrawBody = z.object({
   amountMinor: amountString,
   currency: z.literal('USD'),
+  network: z.enum(['bitcoin', 'ethereum', 'solana']),
   destination: z.string().min(5).max(200),
   currentPassword: z.string().min(1).max(512),
   totp: z.string().max(16).optional(),
+  requestId: z.string().uuid(),
 }).strict();
 
 const reviewBody = z.object({
   approve: z.boolean(),
   note: z.string().max(500).optional(),
-});
+  currentPassword: z.string().min(1).max(512),
+  totp: z.string().max(16).optional(),
+}).strict();
+
+const paidBody = z.object({
+  currentPassword: z.string().min(1).max(512),
+  totp: z.string().max(16).optional(),
+}).strict();
 
 function paymentsErrorReply(err: unknown):
   | { status: number; error: string }
@@ -50,13 +59,29 @@ function paymentsErrorReply(err: unknown):
     case 'INVALID_AMOUNT':
     case 'INVALID_DESTINATION':
       return { status: 400, error: err.code.toLowerCase() };
+    case 'IDEMPOTENCY_CONFLICT':
+      return { status: 409, error: 'idempotency_conflict' };
     case 'NOT_FOUND':
       return { status: 404, error: 'not_found' };
     case 'ALREADY_REVIEWED':
       return { status: 409, error: 'already_reviewed' };
+    case 'SELF_REVIEW':
+      return { status: 403, error: 'separation_of_duties' };
     case 'PROVIDER_ERROR':
       return { status: 502, error: 'provider_error' };
   }
+}
+
+async function verifyStepUp(
+  db: Db,
+  user: User,
+  input: { currentPassword: string; totp?: string | undefined },
+): Promise<'ok' | 'invalid_password' | 'totp_required'> {
+  if (!await verifyPassword(user.passwordHash, input.currentPassword)) return 'invalid_password';
+  const twoFactor = (await db.select().from(user2fa).where(eq(user2fa.userId, user.id)))[0];
+  if (!twoFactor?.enabled) return 'ok';
+  const secret = openSecret(twoFactor.totpSecret, requireAuthSecret());
+  return input.totp && verifyTotp(secret, input.totp) ? 'ok' : 'totp_required';
 }
 
 export interface WalletDeps {
@@ -127,34 +152,28 @@ export function registerWalletRoutes(app: FastifyInstance, db: Db, deps: WalletD
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_request' });
     }
-    const passwordOk = await verifyPassword(request.user!.passwordHash, parsed.data.currentPassword);
-    if (!passwordOk) {
+    const stepUp = await verifyStepUp(db, request.user!, parsed.data);
+    if (stepUp !== 'ok') {
       await db.insert(securityAuditEvents).values({
         userId: request.user!.id,
         eventType: 'wallet.withdrawal_reauth_failed',
       });
-      return reply.code(401).send({ error: 'reauthentication_failed' });
-    }
-    const twoFactor = (await db.select().from(user2fa).where(eq(user2fa.userId, request.user!.id)))[0];
-    if (twoFactor?.enabled) {
-      const secret = openSecret(twoFactor.totpSecret, requireAuthSecret());
-      if (!parsed.data.totp || !verifyTotp(secret, parsed.data.totp)) {
-        return reply.code(401).send({ error: 'totp_required' });
-      }
+      return reply.code(401).send({ error: stepUp === 'totp_required' ? 'totp_required' : 'reauthentication_failed' });
     }
     try {
-      const id = await requestWithdrawal(db, {
+      const result = await requestWithdrawal(db, {
         userId: request.user!.id,
         amountMinor: BigInt(parsed.data.amountMinor),
         currency: parsed.data.currency,
+        network: parsed.data.network,
         destination: parsed.data.destination,
+        requestKey: `${request.user!.id}:${parsed.data.requestId}`,
       });
-      await db.insert(securityAuditEvents).values({
-        userId: request.user!.id,
-        eventType: 'wallet.withdrawal_requested',
-        metadata: { withdrawalId: id, currency: parsed.data.currency },
+      return reply.code(result.alreadyRequested ? 200 : 201).send({
+        id: result.id,
+        status: 'pending',
+        alreadyRequested: result.alreadyRequested,
       });
-      return reply.code(201).send({ id, status: 'pending' });
     } catch (err) {
       const mapped = paymentsErrorReply(err);
       if (mapped) return reply.code(mapped.status).send({ error: mapped.error });
@@ -173,6 +192,7 @@ export function registerWalletRoutes(app: FastifyInstance, db: Db, deps: WalletD
         id: w.id,
         amountMinor: w.amountMinor.toString(),
         currency: w.currency,
+        network: w.destinationNetwork,
         destination: w.destination,
         status: w.status,
         createdAt: w.createdAt,
@@ -199,6 +219,7 @@ export function registerWalletRoutes(app: FastifyInstance, db: Db, deps: WalletD
         userId: w.userId,
         amountMinor: w.amountMinor.toString(),
         currency: w.currency,
+        network: w.destinationNetwork,
         destination: w.destination,
         createdAt: w.createdAt,
       })),
@@ -211,6 +232,15 @@ export function registerWalletRoutes(app: FastifyInstance, db: Db, deps: WalletD
     const parsed = reviewBody.safeParse(request.body);
     if (!id.success || !parsed.success) {
       return reply.code(400).send({ error: 'invalid_request' });
+    }
+    const stepUp = await verifyStepUp(db, request.user!, parsed.data);
+    if (stepUp !== 'ok') {
+      await db.insert(securityAuditEvents).values({
+        userId: request.user!.id,
+        eventType: 'wallet.admin_reauth_failed',
+        metadata: { action: 'review_withdrawal', withdrawalId: id.data },
+      });
+      return reply.code(401).send({ error: stepUp === 'totp_required' ? 'totp_required' : 'reauthentication_failed' });
     }
     try {
       const input: Parameters<typeof reviewWithdrawal>[1] = {
@@ -231,9 +261,19 @@ export function registerWalletRoutes(app: FastifyInstance, db: Db, deps: WalletD
   app.post('/admin/withdrawals/:id/paid', async (request, reply) => {
     if (!requireAdmin(request)) return reply.code(403).send({ error: 'forbidden' });
     const id = z.string().uuid().safeParse((request.params as { id: string }).id);
-    if (!id.success) return reply.code(400).send({ error: 'invalid_request' });
+    const parsed = paidBody.safeParse(request.body);
+    if (!id.success || !parsed.success) return reply.code(400).send({ error: 'invalid_request' });
+    const stepUp = await verifyStepUp(db, request.user!, parsed.data);
+    if (stepUp !== 'ok') {
+      await db.insert(securityAuditEvents).values({
+        userId: request.user!.id,
+        eventType: 'wallet.admin_reauth_failed',
+        metadata: { action: 'mark_withdrawal_paid', withdrawalId: id.data },
+      });
+      return reply.code(401).send({ error: stepUp === 'totp_required' ? 'totp_required' : 'reauthentication_failed' });
+    }
     try {
-      await markWithdrawalPaid(db, id.data);
+      await markWithdrawalPaid(db, id.data, request.user!.id);
       return reply.send({ id: id.data, status: 'paid' });
     } catch (err) {
       const mapped = paymentsErrorReply(err);

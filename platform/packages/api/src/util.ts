@@ -32,7 +32,7 @@ export function setSessionCookie(reply: FastifyReply, token: string): void {
     httpOnly: true,
     sameSite: 'strict',
     secure: process.env['NODE_ENV'] === 'production',
-    maxAge: 60 * 60 * 24 * 14,
+    maxAge: 60 * 60 * 24,
   });
 }
 

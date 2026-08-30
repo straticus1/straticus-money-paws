@@ -1,15 +1,16 @@
 # Build and run the @paws/api server (runs migrations on boot).
-FROM node:22-alpine AS build
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS build
 RUN corepack enable
 WORKDIR /app
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json tsconfig.base.json ./
 COPY packages ./packages
 RUN pnpm install --frozen-lockfile
-RUN pnpm -r --filter '!@paws/web' build
+RUN pnpm --filter '@paws/api...' build
 
-FROM node:22-alpine
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
 ENV NODE_ENV=production
 WORKDIR /app
-COPY --from=build /app ./
+COPY --chown=node:node --from=build /app ./
+USER node
 EXPOSE 3000
 CMD ["sh", "-c", "node packages/db/dist/migrate.js && node packages/db/dist/seed.js && node packages/api/dist/server.js"]

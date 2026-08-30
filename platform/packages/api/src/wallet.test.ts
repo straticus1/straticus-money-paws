@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createHmac, randomBytes } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import { createDb, type DbHandle } from '@paws/db';
+import { createDb, securityAuditEvents, type DbHandle } from '@paws/db';
 import { runMigrations } from '@paws/db/migrate';
 import { buildApp } from './app.js';
 
@@ -13,6 +13,13 @@ let handle: DbHandle;
 let app: FastifyInstance;
 let userToken: string;
 let adminToken: string;
+
+const BTC_DESTINATION = 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh';
+const WITHDRAWAL_AUTH = {
+  currentPassword: 'a-strong-password',
+  requestId: '11111111-1111-4111-8111-111111111111',
+};
+const ADMIN_AUTH = { currentPassword: 'a-strong-password' };
 
 const providerFetch = (async () =>
   new Response(
@@ -51,7 +58,7 @@ async function register(email: string, username: string): Promise<string> {
 
 beforeEach(async () => {
   await handle.db.execute(sql`
-    TRUNCATE ledger_entries, ledger_transactions, ledger_accounts,
+    TRUNCATE security_audit_events, ledger_entries, ledger_transactions, ledger_accounts,
              deposits, withdrawal_requests, inventory, sessions, user_2fa,
              pets, users CASCADE
   `);
@@ -172,7 +179,7 @@ describe('withdrawals', () => {
       method: 'POST',
       url: '/api/v1/wallet/withdrawals',
       headers: { authorization: `Bearer ${userToken}` },
-      payload: { amountMinor: '500', currency: 'USD', destination: 'bc1q-somewhere', currentPassword: 'wrong-password' },
+      payload: { amountMinor: '500', currency: 'USD', network: 'bitcoin', destination: BTC_DESTINATION, ...WITHDRAWAL_AUTH, currentPassword: 'wrong-password' },
     });
     expect(request.statusCode).toBe(401);
     expect(request.json()).toEqual({ error: 'reauthentication_failed' });
@@ -185,7 +192,7 @@ describe('withdrawals', () => {
       method: 'POST',
       url: '/api/v1/wallet/withdrawals',
       headers: { authorization: `Bearer ${userToken}` },
-      payload: { amountMinor: '3000', currency: 'USD', destination: 'bc1q-somewhere', currentPassword: 'a-strong-password' },
+      payload: { amountMinor: '3000', currency: 'USD', network: 'bitcoin', destination: BTC_DESTINATION, ...WITHDRAWAL_AUTH },
     });
     expect(req.statusCode).toBe(201);
     expect(await usdBalance()).toBe('2000');
@@ -195,7 +202,7 @@ describe('withdrawals', () => {
       method: 'POST',
       url: `/api/v1/admin/withdrawals/${id}/review`,
       headers: { authorization: `Bearer ${adminToken}` },
-      payload: { approve: false, note: 'test denial' },
+      payload: { approve: false, note: 'test denial', ...ADMIN_AUTH },
     });
     expect(review.statusCode).toBe(200);
     expect(await usdBalance()).toBe('5000');
@@ -207,28 +214,28 @@ describe('withdrawals', () => {
       method: 'POST',
       url: '/api/v1/wallet/withdrawals',
       headers: { authorization: `Bearer ${userToken}` },
-      payload: { amountMinor: '3000', currency: 'USD', destination: 'bc1q-somewhere', currentPassword: 'a-strong-password' },
+      payload: { amountMinor: '3000', currency: 'USD', network: 'bitcoin', destination: BTC_DESTINATION, ...WITHDRAWAL_AUTH },
     });
     const { id } = req.json() as { id: string };
     const approve = await app.inject({
       method: 'POST',
       url: `/api/v1/admin/withdrawals/${id}/review`,
       headers: { authorization: `Bearer ${adminToken}` },
-      payload: { approve: true },
+      payload: { approve: true, ...ADMIN_AUTH },
     });
     expect(approve.statusCode).toBe(200);
     const again = await app.inject({
       method: 'POST',
       url: `/api/v1/admin/withdrawals/${id}/review`,
       headers: { authorization: `Bearer ${adminToken}` },
-      payload: { approve: false },
+      payload: { approve: false, ...ADMIN_AUTH },
     });
     expect(again.statusCode).toBe(409);
     const paid = await app.inject({
       method: 'POST',
       url: `/api/v1/admin/withdrawals/${id}/paid`,
       headers: { authorization: `Bearer ${adminToken}` },
-      payload: {},
+      payload: ADMIN_AUTH,
     });
     expect(paid.statusCode).toBe(200);
     expect(await usdBalance()).toBe('2000');
@@ -241,7 +248,7 @@ describe('withdrawals', () => {
       method: 'POST',
       url: '/api/v1/wallet/withdrawals',
       headers: { authorization: `Bearer ${userToken}` },
-      payload: { amountMinor: '1001', currency: 'USD', destination: 'bc1q-somewhere', currentPassword: 'a-strong-password' },
+      payload: { amountMinor: '1001', currency: 'USD', network: 'bitcoin', destination: BTC_DESTINATION, ...WITHDRAWAL_AUTH },
     });
     expect(over.statusCode).toBe(402);
     expect(await usdBalance()).toBe('1000');
@@ -250,14 +257,14 @@ describe('withdrawals', () => {
       method: 'POST',
       url: '/api/v1/wallet/withdrawals',
       headers: { authorization: `Bearer ${userToken}` },
-      payload: { amountMinor: '500', currency: 'USD', destination: 'bc1q-somewhere', currentPassword: 'a-strong-password' },
+      payload: { amountMinor: '500', currency: 'USD', network: 'bitcoin', destination: BTC_DESTINATION, ...WITHDRAWAL_AUTH },
     });
     const { id } = req.json() as { id: string };
     const asUser = await app.inject({
       method: 'POST',
       url: `/api/v1/admin/withdrawals/${id}/review`,
       headers: { authorization: `Bearer ${userToken}` },
-      payload: { approve: true },
+      payload: { approve: true, ...ADMIN_AUTH },
     });
     expect(asUser.statusCode).toBe(403);
   });
@@ -268,7 +275,7 @@ describe('withdrawals', () => {
       method: 'POST',
       url: '/api/v1/wallet/withdrawals',
       headers: { authorization: `Bearer ${userToken}` },
-      payload: { amountMinor: '500', currency: 'USD', destination: 'bc1q-somewhere', currentPassword: 'a-strong-password' },
+      payload: { amountMinor: '500', currency: 'USD', network: 'bitcoin', destination: BTC_DESTINATION, ...WITHDRAWAL_AUTH },
     });
     const list = await app.inject({
       method: 'GET',
@@ -279,5 +286,128 @@ describe('withdrawals', () => {
     const { withdrawals } = list.json() as { withdrawals: { amountMinor: string }[] };
     expect(withdrawals).toHaveLength(1);
     expect(withdrawals[0]!.amountMinor).toBe('500');
+  });
+
+  it('rejects malformed or network-mismatched wallet destinations', async () => {
+    await depositAndConfirm('1000');
+    for (const payload of [
+      { network: 'bitcoin', destination: '0x1111111111111111111111111111111111111111' },
+      { network: 'ethereum', destination: BTC_DESTINATION },
+      { network: 'bitcoin', destination: 'https://lookalike.example/wallet' },
+    ]) {
+      const response = await app.inject({
+        method: 'POST', url: '/api/v1/wallet/withdrawals',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { amountMinor: '500', currency: 'USD', ...payload, ...WITHDRAWAL_AUTH },
+      });
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toEqual({ error: 'invalid_destination' });
+    }
+    expect(await usdBalance()).toBe('1000');
+  });
+
+  it('requires admin step-up authentication and records privileged actions', async () => {
+    await depositAndConfirm('1000');
+    const request = await app.inject({
+      method: 'POST', url: '/api/v1/wallet/withdrawals',
+      headers: { authorization: `Bearer ${userToken}` },
+      payload: { amountMinor: '500', currency: 'USD', network: 'bitcoin', destination: BTC_DESTINATION, ...WITHDRAWAL_AUTH },
+    });
+    const id = request.json().id as string;
+
+    const missing = await app.inject({
+      method: 'POST', url: `/api/v1/admin/withdrawals/${id}/review`,
+      headers: { authorization: `Bearer ${adminToken}` }, payload: { approve: true },
+    });
+    expect(missing.statusCode).toBe(400);
+
+    const wrong = await app.inject({
+      method: 'POST', url: `/api/v1/admin/withdrawals/${id}/review`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { approve: true, currentPassword: 'wrong-password' },
+    });
+    expect(wrong.statusCode).toBe(401);
+
+    const approved = await app.inject({
+      method: 'POST', url: `/api/v1/admin/withdrawals/${id}/review`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { approve: true, ...ADMIN_AUTH },
+    });
+    expect(approved.statusCode).toBe(200);
+
+    const events = await handle.db.select().from(securityAuditEvents);
+    expect(events.map((event) => event.eventType)).toEqual(expect.arrayContaining([
+      'wallet.admin_reauth_failed',
+      'wallet.withdrawal_approved',
+    ]));
+  });
+
+  it('keeps security audit evidence append-only', async () => {
+    await handle.db.insert(securityAuditEvents).values({ eventType: 'test.security_event' });
+    await expect(
+      handle.db.execute(sql`UPDATE security_audit_events SET event_type = 'tampered'`),
+    ).rejects.toThrow();
+    await expect(
+      handle.db.execute(sql`DELETE FROM security_audit_events`),
+    ).rejects.toThrow();
+    const events = await handle.db.select().from(securityAuditEvents);
+    expect(events.map((event) => event.eventType)).toContain('test.security_event');
+  });
+
+  it('prevents an admin from reviewing their own withdrawal', async () => {
+    await handle.db.execute(sql`UPDATE users SET role = 'admin' WHERE username = 'walletuser'`);
+    await depositAndConfirm('1000');
+    const request = await app.inject({
+      method: 'POST', url: '/api/v1/wallet/withdrawals',
+      headers: { authorization: `Bearer ${userToken}` },
+      payload: { amountMinor: '500', currency: 'USD', network: 'bitcoin', destination: BTC_DESTINATION, ...WITHDRAWAL_AUTH },
+    });
+    const review = await app.inject({
+      method: 'POST', url: `/api/v1/admin/withdrawals/${request.json().id}/review`,
+      headers: { authorization: `Bearer ${userToken}` },
+      payload: { approve: true, ...ADMIN_AUTH },
+    });
+    expect(review.statusCode).toBe(403);
+    expect(review.json()).toEqual({ error: 'separation_of_duties' });
+
+    const approved = await app.inject({
+      method: 'POST', url: `/api/v1/admin/withdrawals/${request.json().id}/review`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { approve: true, ...ADMIN_AUTH },
+    });
+    expect(approved.statusCode).toBe(200);
+    const selfPaid = await app.inject({
+      method: 'POST', url: `/api/v1/admin/withdrawals/${request.json().id}/paid`,
+      headers: { authorization: `Bearer ${userToken}` }, payload: ADMIN_AUTH,
+    });
+    expect(selfPaid.statusCode).toBe(403);
+    expect(selfPaid.json()).toEqual({ error: 'separation_of_duties' });
+  });
+
+  it('makes repeated withdrawal requests exactly idempotent', async () => {
+    await depositAndConfirm('1000');
+    const payload = {
+      amountMinor: '500', currency: 'USD', network: 'bitcoin',
+      destination: BTC_DESTINATION, ...WITHDRAWAL_AUTH,
+    };
+    const first = await app.inject({
+      method: 'POST', url: '/api/v1/wallet/withdrawals',
+      headers: { authorization: `Bearer ${userToken}` }, payload,
+    });
+    const replay = await app.inject({
+      method: 'POST', url: '/api/v1/wallet/withdrawals',
+      headers: { authorization: `Bearer ${userToken}` }, payload,
+    });
+    expect(first.statusCode).toBe(201);
+    expect(replay.statusCode).toBe(200);
+    expect(replay.json()).toMatchObject({ id: first.json().id, alreadyRequested: true });
+    const conflictingReplay = await app.inject({
+      method: 'POST', url: '/api/v1/wallet/withdrawals',
+      headers: { authorization: `Bearer ${userToken}` },
+      payload: { ...payload, amountMinor: '400' },
+    });
+    expect(conflictingReplay.statusCode).toBe(409);
+    expect(conflictingReplay.json()).toEqual({ error: 'idempotency_conflict' });
+    expect(await usdBalance()).toBe('500');
   });
 });

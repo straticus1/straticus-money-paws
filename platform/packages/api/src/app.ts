@@ -21,7 +21,7 @@ import { registerCommunityRoutes } from './routes/community.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-function allowedOrigin(origin: string, requestHost?: string): boolean {
+function allowedOrigin(origin: string): boolean {
   const configured = (process.env['WEB_ORIGIN'] ?? '')
     .split(',')
     .map((value) => value.trim())
@@ -29,13 +29,7 @@ function allowedOrigin(origin: string, requestHost?: string): boolean {
   const defaults = process.env['NODE_ENV'] === 'production'
     ? []
     : ['http://localhost:5173', 'http://localhost:8092', 'http://localhost'];
-  if (configured.includes(origin) || defaults.includes(origin)) return true;
-  if (!requestHost) return false;
-  try {
-    return new URL(origin).host === requestHost;
-  } catch {
-    return false;
-  }
+  return configured.includes(origin) || defaults.includes(origin);
 }
 
 export interface AppDeps {
@@ -69,7 +63,13 @@ export interface AppDeps {
  */
 export function buildApp(deps: AppDeps): FastifyInstance {
   const { db } = deps;
-  const app = Fastify({ logger: false });
+  const app = Fastify({
+    logger: false,
+    // Only trust forwarding headers when the deployment explicitly enables it.
+    // The bundled nginx proxy overwrites X-Forwarded-For rather than appending
+    // attacker-provided values.
+    trustProxy: process.env['TRUST_PROXY'] === 'true',
+  });
 
   app.decorateRequest('user', null);
   app.decorateRequest('authMode', 'none');
@@ -110,7 +110,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     }
     if (user && session.mode === 'cookie' && !SAFE_METHODS.has(request.method)) {
       const origin = request.headers.origin;
-      if (typeof origin !== 'string' || !allowedOrigin(origin, request.headers.host)) {
+      if (typeof origin !== 'string' || !allowedOrigin(origin)) {
         return reply.code(403).send({ error: 'cross_site_request' });
       }
     }

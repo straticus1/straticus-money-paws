@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 
@@ -131,7 +132,9 @@ export const withdrawalRequests = pgTable('withdrawal_requests', {
   userId: uuid('user_id').notNull().references(() => users.id),
   amountMinor: bigint('amount_minor', { mode: 'bigint' }).notNull(),
   currency: text('currency', { enum: ['PAWS', 'USD'] }).notNull(),
+  destinationNetwork: text('destination_network', { enum: ['bitcoin', 'ethereum', 'solana'] }).notNull().default('bitcoin'),
   destination: text('destination').notNull(),
+  requestKey: text('request_key').notNull(),
   status: text('status', { enum: ['pending', 'approved', 'denied', 'paid'] })
     .notNull()
     .default('pending'),
@@ -139,7 +142,9 @@ export const withdrawalRequests = pgTable('withdrawal_requests', {
   reviewNote: text('review_note'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
-});
+}, (table) => [
+  uniqueIndex('withdrawal_requests_user_key_idx').on(table.userId, table.requestKey),
+]);
 
 export const gameSessions = pgTable('game_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),

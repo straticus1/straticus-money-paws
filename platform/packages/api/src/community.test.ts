@@ -57,6 +57,7 @@ describe('browser session security', () => {
     expect(cookie).toContain('paws_session=');
     expect(cookie).toContain('HttpOnly');
     expect(cookie).toContain('SameSite=Strict');
+    expect(cookie).toContain('Max-Age=86400');
   });
 
   it('accepts cookie auth for reads and rejects cross-site mutations', async () => {
@@ -78,6 +79,28 @@ describe('browser session security', () => {
     });
     expect(attack.statusCode).toBe(403);
     expect(attack.json()).toEqual({ error: 'cross_site_request' });
+  });
+
+  it('requires an exact trusted origin rather than accepting a matching host', async () => {
+    const login = await app.inject({
+      method: 'POST', url: '/api/v1/auth/register',
+      headers: { 'x-paws-session-mode': 'cookie' },
+      payload: { email: 'origin@paws.money', username: 'origin_user', password: 'correct horse battery' },
+    });
+    const cookie = (login.headers['set-cookie'] as string).split(';')[0]!;
+    const accepted = await app.inject({
+      method: 'PUT', url: '/api/v1/me/settings',
+      headers: { cookie, origin: 'http://localhost:8092' },
+      payload: { leaderboardOptIn: true, trophyShowcase: true },
+    });
+    expect(accepted.statusCode).toBe(200);
+
+    const schemeConfusion = await app.inject({
+      method: 'PUT', url: '/api/v1/me/settings',
+      headers: { cookie, host: 'localhost', origin: 'https://localhost' },
+      payload: { leaderboardOptIn: false, trophyShowcase: true },
+    });
+    expect(schemeConfusion.statusCode).toBe(403);
   });
 });
 
