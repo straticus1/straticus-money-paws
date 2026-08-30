@@ -1,6 +1,7 @@
 import {
   bigint,
   boolean,
+  date,
   integer,
   jsonb,
   pgTable,
@@ -117,8 +118,282 @@ export const withdrawalRequests = pgTable('withdrawal_requests', {
   reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
 });
 
+export const gameSessions = pgTable('game_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  gameType: text('game_type', { enum: ['paw_match'] }).notNull().default('paw_match'),
+  status: text('status', { enum: ['active', 'completed', 'abandoned'] })
+    .notNull()
+    .default('active'),
+  board: jsonb('board').$type<string[]>().notNull(),
+  matchedPositions: jsonb('matched_positions').$type<number[]>().notNull().default([]),
+  firstPosition: integer('first_position'),
+  moves: integer('moves').notNull().default(0),
+  rewardMinor: bigint('reward_minor', { mode: 'bigint' }).notNull().default(0n),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+});
+
+export const gameActions = pgTable('game_actions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id')
+    .notNull()
+    .references(() => gameSessions.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  idempotencyKey: uuid('idempotency_key').notNull(),
+  response: jsonb('response').$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export interface TrailPrivateTile {
+  position: number;
+  terrain: 'meadow' | 'creek' | 'brambles' | 'lookout';
+}
+
+export const dailyGameRewards = pgTable('daily_game_rewards', {
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  rewardDate: date('reward_date').notNull(),
+  awardedMinor: bigint('awarded_minor', { mode: 'bigint' }).notNull().default(0n),
+  rewardedCompletions: integer('rewarded_completions').notNull().default(0),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const trailSessions = pgTable('trail_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  petId: uuid('pet_id').notNull().references(() => pets.id, { onDelete: 'cascade' }),
+  status: text('status', { enum: ['active', 'completed', 'failed', 'abandoned'] })
+    .notNull()
+    .default('active'),
+  privateMap: jsonb('private_map').$type<TrailPrivateTile[]>().notNull(),
+  discoveredPositions: jsonb('discovered_positions').$type<number[]>().notNull().default([]),
+  position: integer('position').notNull(),
+  startPosition: integer('start_position').notNull(),
+  homePosition: integer('home_position').notNull(),
+  keepsakePosition: integer('keepsake_position').notNull(),
+  rescuePosition: integer('rescue_position').notNull(),
+  energy: integer('energy').notNull().default(12),
+  sniffCharges: integer('sniff_charges').notNull().default(2),
+  dashCharges: integer('dash_charges').notNull().default(1),
+  restCharges: integer('rest_charges').notNull().default(1),
+  keepsakeFound: boolean('keepsake_found').notNull().default(false),
+  rescueFound: boolean('rescue_found').notNull().default(false),
+  turns: integer('turns').notNull().default(0),
+  stars: integer('stars').notNull().default(0),
+  rewardMinor: bigint('reward_minor', { mode: 'bigint' }).notNull().default(0n),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+});
+
+export const trailActions = pgTable('trail_actions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id')
+    .notNull()
+    .references(() => trailSessions.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  idempotencyKey: uuid('idempotency_key').notNull(),
+  action: jsonb('action').$type<Record<string, unknown>>().notNull(),
+  response: jsonb('response').$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const petGameProgress = pgTable('pet_game_progress', {
+  petId: uuid('pet_id').notNull().references(() => pets.id, { onDelete: 'cascade' }),
+  gameType: text('game_type', { enum: ['trail_tails', 'midnight_pantry', 'lantern_lines', 'pocket_post', 'parade_practice'] }).notNull(),
+  bondXp: integer('bond_xp').notNull().default(0),
+  bondLevel: integer('bond_level').notNull().default(1),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const pantryPuzzles = pgTable('pantry_puzzles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  puzzleKey: text('puzzle_key').notNull().unique(),
+  mode: text('mode', { enum: ['daily', 'practice'] }).notNull(),
+  generatorVersion: integer('generator_version').notNull().default(1),
+  publicDefinition: jsonb('public_definition').$type<Record<string, unknown>>().notNull(),
+  privateSolution: jsonb('private_solution').$type<Record<string, string[]>>().notNull(),
+  verification: jsonb('verification').$type<Record<string, unknown>>().notNull(),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type PantryPlacements = Record<string, [string | null, string | null]>;
+
+export const pantrySessions = pgTable('pantry_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  petId: uuid('pet_id').notNull().references(() => pets.id, { onDelete: 'cascade' }),
+  puzzleId: uuid('puzzle_id').notNull().references(() => pantryPuzzles.id),
+  mode: text('mode', { enum: ['daily', 'practice'] }).notNull(),
+  status: text('status', { enum: ['active', 'completed', 'failed', 'abandoned'] }).notNull().default('active'),
+  placements: jsonb('placements').$type<PantryPlacements>().notNull().default({}),
+  lockedGuests: jsonb('locked_guests').$type<string[]>().notNull().default([]),
+  bellRings: integer('bell_rings').notNull().default(0),
+  mistakes: integer('mistakes').notNull().default(0),
+  stars: integer('stars').notNull().default(0),
+  rewardMinor: bigint('reward_minor', { mode: 'bigint' }).notNull().default(0n),
+  journalCredited: boolean('journal_credited').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+});
+
+export const pantryActions = pgTable('pantry_actions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id').notNull().references(() => pantrySessions.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  idempotencyKey: uuid('idempotency_key').notNull(),
+  action: jsonb('action').$type<Record<string, unknown>>().notNull(),
+  response: jsonb('response').$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const lanternPuzzles = pgTable('lantern_puzzles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  puzzleKey: text('puzzle_key').notNull().unique(),
+  mode: text('mode', { enum: ['daily', 'practice'] }).notNull(),
+  version: integer('version').notNull().default(1),
+  definition: jsonb('definition').$type<Record<string, unknown>>().notNull(),
+  minimumTurns: integer('minimum_turns').notNull(),
+  verification: jsonb('verification').$type<Record<string, unknown>>().notNull(),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const lanternSessions = pgTable('lantern_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  petId: uuid('pet_id').notNull().references(() => pets.id, { onDelete: 'cascade' }),
+  puzzleId: uuid('puzzle_id').notNull().references(() => lanternPuzzles.id),
+  mode: text('mode', { enum: ['daily', 'practice'] }).notNull(),
+  status: text('status', { enum: ['active', 'completed', 'abandoned'] }).notNull().default('active'),
+  orientations: jsonb('orientations').$type<number[]>().notNull(),
+  rotations: integer('rotations').notNull().default(0),
+  resets: integer('resets').notNull().default(0),
+  stars: integer('stars').notNull().default(0),
+  rewardMinor: bigint('reward_minor', { mode: 'bigint' }).notNull().default(0n),
+  journalCredited: boolean('journal_credited').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+});
+
+export const lanternActions = pgTable('lantern_actions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id').notNull().references(() => lanternSessions.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  idempotencyKey: uuid('idempotency_key').notNull(),
+  action: jsonb('action').$type<Record<string, unknown>>().notNull(),
+  response: jsonb('response').$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const postPuzzles = pgTable('post_puzzles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  puzzleKey: text('puzzle_key').notNull().unique(),
+  mode: text('mode', { enum: ['daily', 'practice'] }).notNull(),
+  version: integer('version').notNull().default(1),
+  definition: jsonb('definition').$type<Record<string, unknown>>().notNull(),
+  minimumPushes: integer('minimum_pushes').notNull(),
+  minimumMoves: integer('minimum_moves').notNull(),
+  verification: jsonb('verification').$type<Record<string, unknown>>().notNull(),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export interface PostHistoryEntry {
+  playerPosition: number;
+  boxPositions: number[];
+  moves: number;
+  pushes: number;
+}
+
+export const postSessions = pgTable('post_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  petId: uuid('pet_id').notNull().references(() => pets.id, { onDelete: 'cascade' }),
+  puzzleId: uuid('puzzle_id').notNull().references(() => postPuzzles.id),
+  mode: text('mode', { enum: ['daily', 'practice'] }).notNull(),
+  status: text('status', { enum: ['active', 'completed', 'abandoned'] }).notNull().default('active'),
+  playerPosition: integer('player_position').notNull(),
+  boxPositions: jsonb('box_positions').$type<number[]>().notNull(),
+  history: jsonb('history').$type<PostHistoryEntry[]>().notNull().default([]),
+  moves: integer('moves').notNull().default(0),
+  pushes: integer('pushes').notNull().default(0),
+  undos: integer('undos').notNull().default(0),
+  resets: integer('resets').notNull().default(0),
+  stars: integer('stars').notNull().default(0),
+  rewardMinor: bigint('reward_minor', { mode: 'bigint' }).notNull().default(0n),
+  journalCredited: boolean('journal_credited').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+});
+
+export const postActions = pgTable('post_actions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id').notNull().references(() => postSessions.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  idempotencyKey: uuid('idempotency_key').notNull(),
+  action: jsonb('action').$type<Record<string, unknown>>().notNull(),
+  response: jsonb('response').$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const paradePuzzles = pgTable('parade_puzzles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  puzzleKey: text('puzzle_key').notNull().unique(),
+  mode: text('mode', { enum: ['daily', 'practice'] }).notNull(),
+  version: integer('version').notNull().default(1),
+  definition: jsonb('definition').$type<Record<string, unknown>>().notNull(),
+  minimumCommands: integer('minimum_commands').notNull(),
+  verification: jsonb('verification').$type<Record<string, unknown>>().notNull(),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const paradeSessions = pgTable('parade_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  petId: uuid('pet_id').notNull().references(() => pets.id, { onDelete: 'cascade' }),
+  puzzleId: uuid('puzzle_id').notNull().references(() => paradePuzzles.id),
+  mode: text('mode', { enum: ['daily', 'practice'] }).notNull(),
+  status: text('status', { enum: ['active', 'completed', 'abandoned'] }).notNull().default('active'),
+  runs: integer('runs').notNull().default(0),
+  bestCommandCount: integer('best_command_count'),
+  stars: integer('stars').notNull().default(0),
+  rewardMinor: bigint('reward_minor', { mode: 'bigint' }).notNull().default(0n),
+  journalCredited: boolean('journal_credited').notNull().default(false),
+  lastResult: jsonb('last_result').$type<Record<string, unknown>>(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+});
+
+export const paradeActions = pgTable('parade_actions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id').notNull().references(() => paradeSessions.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  idempotencyKey: uuid('idempotency_key').notNull(),
+  action: jsonb('action').$type<Record<string, unknown>>().notNull(),
+  response: jsonb('response').$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type User = typeof users.$inferSelect;
 export type Pet = typeof pets.$inferSelect;
 export type StoreItem = typeof storeItems.$inferSelect;
 export type Deposit = typeof deposits.$inferSelect;
 export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;
+export type GameSession = typeof gameSessions.$inferSelect;
+export type TrailSession = typeof trailSessions.$inferSelect;
+export type PantryPuzzle = typeof pantryPuzzles.$inferSelect;
+export type PantrySession = typeof pantrySessions.$inferSelect;
+export type LanternPuzzle = typeof lanternPuzzles.$inferSelect;
+export type LanternSession = typeof lanternSessions.$inferSelect;
+export type PostPuzzle = typeof postPuzzles.$inferSelect;
+export type PostSession = typeof postSessions.$inferSelect;
+export type ParadePuzzle = typeof paradePuzzles.$inferSelect;
+export type ParadeSession = typeof paradeSessions.$inferSelect;

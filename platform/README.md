@@ -12,9 +12,9 @@ PHP app is archived in `../legacy/` and frozen — security patches only.
 | `@paws/ledger` | Double-entry ledger: idempotency keys, row-locked overdraft checks | ✅ 10 tests |
 | `@paws/auth` | Argon2id passwords, CSPRNG session tokens hashed at rest, sealed TOTP 2FA | ✅ 12 tests |
 | `@paws/payments` | Coinbase Commerce deposits, manually-reviewed withdrawals | ✅ 14 tests (HTTP routes not wired yet) |
-| `@paws/api` | Fastify server: auth, pets, store, wallet, admin queue | ✅ 26 tests |
-| `@paws/core` | Typed API client SDK (browser + node) | ✅ 16 tests |
-| `@paws/web` | Preact SPA: login, dashboard, pets, store, wallet | ✅ builds, 25KB |
+| `@paws/api` | Fastify server: auth, pets, six server-authoritative games, store, wallet, admin queue | ✅ tested |
+| `@paws/core` | Typed API client SDK (browser + node) | ✅ 24 tests |
+| `@paws/web` | Preact SPA: account, pets, store, wallet, and games | ✅ builds |
 
 ## Money invariants (do not weaken)
 
@@ -27,6 +27,18 @@ PHP app is archived in `../legacy/` and frozen — security patches only.
   accounts (`treasury`, `revenue`, `withholding`) may.
 - Withdrawals hold funds in `withholding` at request time; denial refunds,
   payout moves the hold to `treasury`.
+- All six games are server-authoritative and free-to-play. They can award only
+  PAWS, share a 125 PAWS per-account UTC daily cap, and never accept USD or
+  crypto wagers. See
+  [`docs/GAME-SECURITY.md`](docs/GAME-SECURITY.md),
+  [`docs/TRAIL-TAILS-DESIGN.md`](docs/TRAIL-TAILS-DESIGN.md), and
+  [`docs/MIDNIGHT-PANTRY-DESIGN.md`](docs/MIDNIGHT-PANTRY-DESIGN.md),
+  [`docs/LANTERN-LINES-DESIGN.md`](docs/LANTERN-LINES-DESIGN.md),
+  [`docs/POCKET-POST-DESIGN.md`](docs/POCKET-POST-DESIGN.md), and
+  [`docs/PARADE-PRACTICE-DESIGN.md`](docs/PARADE-PRACTICE-DESIGN.md).
+- The store includes food plus PAWS-priced cosmetic props, houses, toys, trees,
+  carriers, habitats, and décor. Cosmetic inventory never changes game rules or
+  rewards.
 - Security rules: `~/development/ads-fable-utils/SECURITY-RULES.md` is binding
   for anything touching crypto/auth/tokens/SQL/randomness.
 
@@ -57,6 +69,31 @@ pnpm --filter @paws/web dev   # Vite on :5173, proxies /api -> :3000
 
 Required env for production: `DATABASE_URL`, `AUTH_SECRET` (32-byte base64),
 `COINBASE_API_KEY`, `COINBASE_WEBHOOK_SECRET`, `PORT`.
+
+### Bootstrap an admin account
+
+The bootstrap command creates an admin or updates the account matching
+`ADMIN_EMAIL`. It resets that account's username and password, promotes it to
+`admin`, and ensures its PAWS and USD ledger accounts exist. It is safe to rerun
+with the same email. It refuses to reuse a username owned by another account.
+
+```sh
+DATABASE_URL=postgres://localhost:5432/paws_dev \
+ADMIN_EMAIL=admin@example.com \
+ADMIN_USERNAME=admin \
+ADMIN_PASSWORD='choose-a-strong-password' \
+pnpm bootstrap:admin
+```
+
+Against the Docker Compose stack:
+
+```sh
+docker compose exec \
+  -e ADMIN_EMAIL=admin@example.com \
+  -e ADMIN_USERNAME=admin \
+  -e ADMIN_PASSWORD='choose-a-strong-password' \
+  api node packages/api/dist/bootstrap-admin.js
+```
 
 ## Status: Tier 1 complete — 78 tests green, Docker stack smoke-tested
 
@@ -101,4 +138,5 @@ found already broken (backend port 3000 not listening) BEFORE any changes
 tonight — untouched, flagging for a separate look.
 
 Deferred (come back post-cutover, no downtime): tournaments, breeding, quests,
-social, adventures, marketplace, AI generator, metaverse, desktop app, CLI.
+social, adventures, marketplace, AI generator, metaverse, desktop app, CLI,
+and any real-money/chance gaming.

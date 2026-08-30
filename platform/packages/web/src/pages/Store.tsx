@@ -11,6 +11,7 @@ export function Store() {
   const [error, setError] = useState<string | null>(null);
   const [buyErrors, setBuyErrors] = useState<Record<string, string>>({});
   const [buying, setBuying] = useState<Record<string, boolean>>({});
+  const [category, setCategory] = useState('all');
 
   useEffect(() => {
     call(() => client.storeItems())
@@ -45,16 +46,20 @@ export function Store() {
     <>
       <Header />
       <main class="main">
-        <h1>Store</h1>
+        <div class="store-heading"><div><p>Pet outfitter & neighborhood supply</p><h1>The General Store</h1></div><span>Food, toys, homes, props, habitats, and small wonders.</span></div>
         {loading && <Notice type="loading" message="Loading store…" />}
         {error !== null && <Notice type="error" message={error} />}
+        <div class="store-filters" role="group" aria-label="Store categories">
+          {['all', ...Array.from(new Set(items.map((item) => item.category)))].map((name) => <button class={category === name ? 'is-active' : ''} onClick={() => setCategory(name)}>{name}</button>)}
+        </div>
         <div class="store-grid">
-          {items.map((item) => {
+          {items.filter((item) => category === 'all' || item.category === category).map((item) => {
             const itemBuyError = buyErrors[item.id];
             const isBuying = buying[item.id] === true;
             return (
               <div key={item.id} class="card store-card">
                 <div class="store-emoji">{item.effect.emoji}</div>
+                <small class="store-category">{item.category}</small>
                 <h3>{item.name}</h3>
                 <p class="store-description">{item.description}</p>
                 <p class="store-price">{formatMinor(item.priceMinor, item.currency)}</p>

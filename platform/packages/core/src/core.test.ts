@@ -158,4 +158,133 @@ describe('PawsClient – ApiError mapping', () => {
     const headers = (init as RequestInit).headers as Record<string, string>;
     expect(headers['Authorization']).toBeUndefined();
   });
+
+  it('uses the API auth route prefix for register, login, and logout', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ token: 'register-token', user: {} }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ token: 'login-token', user: {} }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 204,
+      } as unknown as Response);
+
+    const client = new PawsClient({ baseUrl: '', getToken: () => 'token' });
+    await client.register('admin@paws.local', 'admin', 'password');
+    await client.login('admin@paws.local', 'password');
+    await client.logout();
+
+    expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual([
+      '/api/v1/auth/register',
+      '/api/v1/auth/login',
+      '/api/v1/auth/logout',
+    ]);
+  });
+
+  it('unwraps collection responses from the API contract', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ pets: [{ id: 'pet-1' }] }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ balances: [{ currency: 'PAWS', amountMinor: '5' }] }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ items: [{ itemId: 'item-1' }] }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ items: [{ id: 'store-1' }] }),
+      } as unknown as Response);
+
+    const client = new PawsClient({ baseUrl: '', getToken: () => 'token' });
+    expect(await client.pets()).toEqual([{ id: 'pet-1' }]);
+    expect(await client.balances()).toEqual([{ currency: 'PAWS', amountMinor: '5' }]);
+    expect(await client.inventory()).toEqual([{ itemId: 'item-1' }]);
+    expect(await client.storeItems()).toEqual([{ id: 'store-1' }]);
+  });
+
+  it('sends Paw Match moves only to the server-authoritative game endpoint', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ game: { id: 'game-1' }, outcome: 'first_pick' }),
+    } as Response);
+
+    const client = new PawsClient({ baseUrl: '', getToken: () => 'token' });
+    await client.flipPawMatch('game-1', 4, '123e4567-e89b-12d3-a456-426614174000');
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0]!;
+    expect(url).toBe('/api/v1/games/paw-match/game-1/flip');
+    expect(JSON.parse((init as RequestInit).body as string)).toEqual({
+      position: 4,
+      actionId: '123e4567-e89b-12d3-a456-426614174000',
+    });
+  });
+
+  it('sends Trail Tails actions without client-owned game or reward state', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ game: { id: 'trail-1' }, outcome: 'moved' }),
+    } as Response);
+
+    const client = new PawsClient({ baseUrl: '', getToken: () => 'token' });
+    await client.actTrailTails(
+      'trail-1',
+      { action: 'move', direction: 'north' },
+      '123e4567-e89b-12d3-a456-426614174000',
+    );
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0]!;
+    expect(url).toBe('/api/v1/games/trail-tails/trail-1/actions');
+    expect(JSON.parse((init as RequestInit).body as string)).toEqual({
+      action: 'move',
+      direction: 'north',
+      actionId: '123e4567-e89b-12d3-a456-426614174000',
+    });
+  });
+
+  it('sends Midnight Pantry placements without correctness or economic fields', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ game: { id: 'pantry-1' }, outcome: 'placed' }),
+    } as Response);
+
+    const client = new PawsClient({ baseUrl: '', getToken: () => 'token' });
+    await client.actMidnightPantry(
+      'pantry-1',
+      { action: 'place', guestId: 'moth', slot: 1, ingredientId: 'moonberry' },
+      '123e4567-e89b-12d3-a456-426614174000',
+    );
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0]!;
+    expect(url).toBe('/api/v1/games/midnight-pantry/pantry-1/actions');
+    expect(JSON.parse((init as RequestInit).body as string)).toEqual({
+      action: 'place',
+      guestId: 'moth',
+      slot: 1,
+      ingredientId: 'moonberry',
+      actionId: '123e4567-e89b-12d3-a456-426614174000',
+    });
+  });
+
+  it.each([
+    ['lantern-lines', 'actLanternLines', { action: 'rotate', position: 2, direction: 'clockwise' }],
+    ['pocket-post', 'actPocketPost', { action: 'move', direction: 'north' }],
+    ['parade-practice', 'actParadePractice', { action: 'run', commands: ['forward', 'turn-left'] }],
+  ] as const)('sends strict %s actions without client-owned results', async (slug, method, action) => {
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: true, json: async () => ({ game: { id: 'new-1' } }) } as Response);
+    const client = new PawsClient({ baseUrl: '', getToken: () => 'token' });
+    await (client[method] as (id: string, action: never, actionId: string) => Promise<unknown>)('new-1', action as never, '123e4567-e89b-12d3-a456-426614174000');
+    const [url, init] = vi.mocked(fetch).mock.calls[0]!;
+    expect(url).toBe(`/api/v1/games/${slug}/new-1/actions`);
+    expect(JSON.parse((init as RequestInit).body as string)).toEqual({ ...action, actionId: '123e4567-e89b-12d3-a456-426614174000' });
+  });
 });

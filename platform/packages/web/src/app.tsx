@@ -5,6 +5,13 @@ import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { Store } from './pages/Store';
 import { Wallet } from './pages/Wallet';
+import { Games } from './pages/Games';
+import { TrailTails } from './pages/TrailTails';
+import { MidnightPantry } from './pages/MidnightPantry';
+import { PawMatch } from './pages/PawMatch';
+import { LanternLines } from './pages/LanternLines';
+import { PocketPost } from './pages/PocketPost';
+import { ParadePractice } from './pages/ParadePractice';
 
 function getRoute(): string {
   // hash is like "#/login" → "/login", or "#/" → "/"
@@ -37,6 +44,20 @@ export function App() {
       return <Store />;
     case '/wallet':
       return <Wallet />;
+    case '/games':
+      return <Games />;
+    case '/games/paw-match':
+      return <PawMatch />;
+    case '/games/trail-tails':
+      return <TrailTails />;
+    case '/games/midnight-pantry':
+      return <MidnightPantry />;
+    case '/games/lantern-lines':
+      return <LanternLines />;
+    case '/games/pocket-post':
+      return <PocketPost />;
+    case '/games/parade-practice':
+      return <ParadePractice />;
     default:
       return <Dashboard />;
   }

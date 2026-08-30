@@ -8,7 +8,8 @@
     "build": "tsc -b",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "dev": "tsx watch src/server.ts"
+    "dev": "tsx watch src/server.ts",
+    "bootstrap:admin": "tsx src/bootstrap-admin.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.0",

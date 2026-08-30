@@ -35,6 +35,9 @@ export function Header() {
       <a href="#/store" style="font-size:0.88rem;color:var(--accent);text-decoration:none;font-weight:600;">
         Store
       </a>
+      <a href="#/games" style="font-size:0.88rem;color:var(--accent);text-decoration:none;font-weight:600;">
+        Games
+      </a>
       <a href="#/wallet" style="font-size:0.88rem;color:var(--accent);text-decoration:none;font-weight:600;">
         Wallet
       </a>

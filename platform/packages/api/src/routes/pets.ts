@@ -3,7 +3,7 @@ import { and, eq, gte, sql } from 'drizzle-orm';
 import { type Db, pets, inventory, storeItems } from '@paws/db';
 import { z } from 'zod';
 
-const SPECIES = ['dog', 'cat', 'bird', 'rabbit', 'horse'] as const;
+const SPECIES = ['dog', 'cat', 'bird', 'rabbit', 'horse', 'fox', 'turtle', 'hamster', 'guinea pig', 'ferret', 'hedgehog', 'frog', 'fish'] as const;
 
 const createPetBody = z.object({
   name: z.string().trim().min(1).max(50),

@@ -20,6 +20,8 @@ interface LegacyStoreItem {
   emoji: string;
   age_restricted: 0 | 1;
   is_active: 0 | 1;
+  currency?: 'USD' | 'PAWS';
+  price_minor?: number;
 }
 
 function usdToCents(price: number): bigint {
@@ -46,8 +48,10 @@ export async function seed(connectionString: string): Promise<number> {
           name: item.name,
           description: item.description ?? '',
           category: item.item_type,
-          priceMinor: usdToCents(item.price_usd),
-          currency: 'USD',
+          priceMinor: item.currency === 'PAWS' && item.price_minor !== undefined
+            ? BigInt(item.price_minor)
+            : usdToCents(item.price_usd),
+          currency: item.currency ?? 'USD',
           effect: {
             hungerRestore: item.hunger_restore,
             happinessBoost: item.happiness_boost,

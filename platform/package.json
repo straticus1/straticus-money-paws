@@ -9,7 +9,8 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
-    "dev": "pnpm --filter @paws/api dev"
+    "dev": "pnpm --filter @paws/api dev",
+    "bootstrap:admin": "pnpm --filter @paws/api bootstrap:admin"
   },
   "devDependencies": {
     "typescript": "^5.7.0",

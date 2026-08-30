@@ -3,24 +3,7 @@ import type { InventoryItem, Pet } from '@paws/core';
 import { Header } from '../components/Header';
 import { Notice } from '../components/Notice';
 import { call, client } from '../lib/api';
-
-const SPECIES = ['dog', 'cat', 'bird', 'rabbit', 'horse'] as const;
-type Species = (typeof SPECIES)[number];
-
-const SPECIES_EMOJI: Record<Species, string> = {
-  dog: '🐕',
-  cat: '🐈',
-  bird: '🐦',
-  rabbit: '🐰',
-  horse: '🐴',
-};
-
-function speciesEmoji(s: string): string {
-  if ((SPECIES as readonly string[]).includes(s)) {
-    return SPECIES_EMOJI[s as Species];
-  }
-  return '🐾';
-}
+import { PET_EMOJI, PET_SPECIES, petEmoji, type PetSpecies } from '../lib/pets';
 
 function StatBar({ value, color }: { value: number; color: string }) {
   const pct = Math.min(100, Math.max(0, value));
@@ -42,7 +25,7 @@ function FeedModal({
   onFeed: (itemId: string) => void;
   onClose: () => void;
 }) {
-  const available = inventory.filter((i) => i.quantity > 0);
+  const available = inventory.filter((i) => i.quantity > 0 && (i.category === 'food' || i.category === 'treat'));
   return (
     <div class="modal-overlay" onClick={onClose}>
       <div class="modal" onClick={(e) => e.stopPropagation()}>
@@ -54,7 +37,7 @@ function FeedModal({
             {available.map((item) => (
               <li key={item.itemId}>
                 <button class="btn" onClick={() => onFeed(item.itemId)}>
-                  {item.emoji !== undefined ? `${item.emoji} ` : ''}
+                  {item.effect?.emoji !== undefined ? `${item.effect.emoji} ` : ''}
                   {item.name} ×{item.quantity}
                 </button>
               </li>
@@ -74,7 +57,7 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
-  const [newSpecies, setNewSpecies] = useState<Species>('dog');
+  const [newSpecies, setNewSpecies] = useState<PetSpecies>('dog');
   const [createError, setCreateError] = useState<string | null>(null);
   const [feedingPet, setFeedingPet] = useState<Pet | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -133,7 +116,7 @@ export function Dashboard() {
           <div class="pet-grid">
             {pets.map((pet) => (
               <div key={pet.id} class={`card pet-card${pet.alive ? '' : ' pet-card--dead'}`}>
-                <div class="pet-emoji">{speciesEmoji(pet.species)}</div>
+                <div class="pet-emoji">{petEmoji(pet.species)}</div>
                 <h3>{pet.name}</h3>
                 <p class="pet-species">{pet.species}</p>
                 {!pet.alive && <p class="pet-dead-label">Passed Away</p>}
@@ -173,11 +156,11 @@ export function Dashboard() {
             />
             <select
               value={newSpecies}
-              onChange={(e) => setNewSpecies((e.target as HTMLSelectElement).value as Species)}
+              onChange={(e) => setNewSpecies((e.target as HTMLSelectElement).value as PetSpecies)}
             >
-              {SPECIES.map((s) => (
+              {PET_SPECIES.map((s) => (
                 <option key={s} value={s}>
-                  {SPECIES_EMOJI[s]} {s}
+                  {PET_EMOJI[s]} {s}
                 </option>
               ))}
             </select>

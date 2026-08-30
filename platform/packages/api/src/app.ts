@@ -10,6 +10,12 @@ import { registerMeRoutes } from './routes/me.js';
 import { registerPetRoutes } from './routes/pets.js';
 import { registerStoreRoutes } from './routes/store.js';
 import { registerWalletRoutes, type WalletDeps } from './routes/wallet.js';
+import { registerGameRoutes } from './routes/games.js';
+import { registerTrailTailsRoutes } from './routes/trail-tails.js';
+import { registerMidnightPantryRoutes } from './routes/midnight-pantry.js';
+import { registerLanternLinesRoutes } from './routes/lantern-lines.js';
+import { registerPocketPostRoutes } from './routes/pocket-post.js';
+import { registerParadePracticeRoutes } from './routes/parade-practice.js';
 
 export interface AppDeps {
   db: Db;
@@ -69,6 +75,12 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       registerMeRoutes(v1, db);
       registerPetRoutes(v1, db);
       registerStoreRoutes(v1, db);
+      registerGameRoutes(v1, db);
+      registerTrailTailsRoutes(v1, db);
+      registerMidnightPantryRoutes(v1, db);
+      registerLanternLinesRoutes(v1, db);
+      registerPocketPostRoutes(v1, db);
+      registerParadePracticeRoutes(v1, db);
       const walletDeps: WalletDeps = {};
       if (deps.providerFetch) walletDeps.providerFetch = deps.providerFetch;
       registerWalletRoutes(v1, db, walletDeps);
