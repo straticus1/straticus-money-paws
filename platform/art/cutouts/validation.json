@@ -1,0 +1,121 @@
+[
+  {
+    "asset": "dog",
+    "source_dimensions": [
+      1254,
+      1254
+    ],
+    "export_dimensions": [
+      512,
+      512
+    ],
+    "alpha_range": [
+      0,
+      255
+    ],
+    "transparent_percent": 60.4,
+    "export_bytes": 49428
+  },
+  {
+    "asset": "cat",
+    "source_dimensions": [
+      1254,
+      1254
+    ],
+    "export_dimensions": [
+      512,
+      512
+    ],
+    "alpha_range": [
+      0,
+      255
+    ],
+    "transparent_percent": 55.8,
+    "export_bytes": 55100
+  },
+  {
+    "asset": "fox",
+    "source_dimensions": [
+      1254,
+      1254
+    ],
+    "export_dimensions": [
+      512,
+      512
+    ],
+    "alpha_range": [
+      0,
+      255
+    ],
+    "transparent_percent": 64.7,
+    "export_bytes": 46806
+  },
+  {
+    "asset": "rabbit",
+    "source_dimensions": [
+      1254,
+      1254
+    ],
+    "export_dimensions": [
+      512,
+      512
+    ],
+    "alpha_range": [
+      0,
+      255
+    ],
+    "transparent_percent": 61.7,
+    "export_bytes": 41350
+  },
+  {
+    "asset": "squeaky-moon",
+    "source_dimensions": [
+      1254,
+      1254
+    ],
+    "export_dimensions": [
+      384,
+      384
+    ],
+    "alpha_range": [
+      0,
+      255
+    ],
+    "transparent_percent": 57.5,
+    "export_bytes": 23126
+  },
+  {
+    "asset": "rolling-acorn",
+    "source_dimensions": [
+      1254,
+      1254
+    ],
+    "export_dimensions": [
+      384,
+      384
+    ],
+    "alpha_range": [
+      0,
+      255
+    ],
+    "transparent_percent": 55.4,
+    "export_bytes": 23344
+  },
+  {
+    "asset": "clover-crunch",
+    "source_dimensions": [
+      1254,
+      1254
+    ],
+    "export_dimensions": [
+      384,
+      384
+    ],
+    "alpha_range": [
+      0,
+      255
+    ],
+    "transparent_percent": 53.6,
+    "export_bytes": 20038
+  }
+]

@@ -1,0 +1,43 @@
+/* Shared by the real home and the local studio. Keep text outside the scenery. */
+.pet-home { font-size: 1.125rem; line-height: 1.6; overflow-wrap: anywhere; }
+.pet-home :is(p, small, label, button, select, summary, dt, dd, time, strong, .home-kicker, .home-vitals span, .home-vitals b, .home-text-link, .home-item-shelf b) { font-size: 1rem; line-height: 1.6; }
+.pet-home :is(.companion-traits span, .companion-bond > span, .companion-daily-credit > span, .home-scene-toolbar > span) { font-size: 1rem; line-height: 1.6; }
+.pet-home :is(p, small, label, dt, dd, time, .home-care-note, .home-vitals b, .home-scene-caption) { color: #283e31; }
+.pet-home :is(button, select, summary):not(.home-resident) { min-height: 44px; }
+.pet-home .home-text-link { min-height: 44px; }
+.pet-home .home-floor-cell { min-width: 44px; }
+.pet-home .home-scene-toolbar { flex-wrap: wrap; gap: 16px; letter-spacing: .04em; }
+.pet-home .home-scene-toolbar > label { flex: 1 1 180px; }
+.pet-home .home-scene-toolbar select { width: 100%; }
+.pet-home :is(button, a, select, summary):focus-visible { outline: 3px solid #172b20; outline-offset: 4px; box-shadow: 0 0 0 4px #fff; }
+.pet-home .home-care-line { flex-wrap: wrap; }
+.pet-home .home-care-line label { flex-basis: 160px; }
+.pet-home .home-care-line button { min-width: 64px; }
+.pet-home .home-room-description { padding: 16px 20px; border-top: 1px solid #a4ae97; background: #fffdf5; }
+.pet-home .home-room-description summary { cursor: pointer; font-weight: 700; }
+.pet-home .home-room-description p { margin: 12px 0; }
+.pet-home .home-room-description ul { padding-left: 24px; }
+.pet-home .home-room-description li { margin-block: 8px; }
+.pet-home .home-art-help { margin: 0; padding: 12px 20px; background: #fffdf5; }
+.pet-home .home-floor-cell small { font-size: 1rem; max-width: 180px; color: #fffbed; }
+.pet-home .companion-bandanas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pet-home .companion-journal > ol { max-height: none; overflow: visible; }
+.pet-home .companion-objectives li > span { width: 32px; height: 32px; font-size: 1rem; }
+.pet-home .companion-keepsake { flex-wrap: wrap; }
+.pet-home .home-primary:disabled, .pet-home .home-care-line button:disabled, .pet-home .home-item-shelf > button:disabled, .pet-home .bandana-swatch:disabled { opacity: 1; color: #4b5847; background: #e0e3d8; border: 1px solid #87927e; }
+@media (max-width: 1050px) { .pet-home .home-layout, .pet-home .companion-story { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 700px) {
+  .pet-home .home-outings { grid-template-columns: minmax(0, 1fr); }
+  .pet-home .home-heading h1 { font-size: clamp(2rem, 10vw, 3rem); letter-spacing: -.05em; }
+  .pet-home .home-scene-toolbar > span { width: 100%; }
+}
+@media (prefers-contrast: more) {
+  .pet-home { --ink: #142318; --line: #52614a; }
+  .pet-home :is(p, small, label, dt, dd, time) { color: #142318; }
+  .pet-home :is(button, select, .home-scene-panel, .home-room-description) { border: 2px solid #142318; }
+  .pet-home .home-primary { color: #fff; background: #173820; }
+}
+@media (forced-colors: active) {
+  .pet-home .home-floor-cell, .pet-home .home-resident { border: 2px solid ButtonText; }
+  .pet-home :is(button, a, select, summary):focus-visible { outline-color: Highlight; }
+}

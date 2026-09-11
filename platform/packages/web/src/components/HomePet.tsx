@@ -1,11 +1,23 @@
 import { petEmoji } from '../lib/pets';
 import type { Companion } from '@paws/core';
+import { useState } from 'preact/hooks';
+import { petArtwork } from '../lib/art';
 
 const COATS = { honey: '#bd8454', silver: '#a69a9f', cocoa: '#8a624b', cream: '#ede4d0' };
 const BANDANAS = { moss: '#315e49', sunflower: '#c39830', berry: '#a05068', midnight: '#485775' };
 
-/** Lightweight original character art; no remote assets or executable SVG input. */
-export function HomePet({ species, companion }: { species: string; companion?: Companion | undefined }) {
+/** Local, curated artwork only. The classic renderer retains individual coat/marking details. */
+export function HomePet({ species, companion, painted = false }: { species: string; companion?: Companion | undefined; painted?: boolean }) {
+  const source = petArtwork.get(species);
+  const [failedSource, setFailedSource] = useState<string>();
+  if (!painted || !source || failedSource === source) return <ClassicHomePet species={species} companion={companion} />;
+  return <span class={`home-painted-pet home-painted-pet--${species}`} aria-hidden="true">
+    <img src={source} alt="" draggable={false} onError={() => setFailedSource(source)} />
+    <svg class="home-painted-bandana" viewBox="0 0 80 35"><path d="M5 3 Q40 13 75 3 L55 30 L40 15 L25 30 Z" fill={BANDANAS[companion?.appearance.bandana ?? 'moss']} /><circle cx="40" cy="13" r="3" fill="#efc76b" /></svg>
+  </span>;
+}
+
+function ClassicHomePet({ species, companion }: { species: string; companion?: Companion | undefined }) {
   const bandana = BANDANAS[companion?.appearance.bandana ?? 'moss'];
   if (!['dog', 'cat', 'fox', 'rabbit'].includes(species)) {
     return <span class={`home-pet-badge home-pet-badge--${companion?.appearance.coat ?? 'honey'} home-pet-badge--${companion?.appearance.marking ?? 'blaze'}`} aria-hidden="true"><span class="home-pet-emoji">{petEmoji(species)}</span><svg viewBox="0 0 80 35" class="home-badge-bandana"><path d="M5 3 Q40 13 75 3 L55 30 L40 15 L25 30 Z" fill={bandana} /></svg></span>;

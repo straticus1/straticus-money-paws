@@ -1,0 +1,5 @@
+# Local art preparation only; not a dependency of the game or backend.
+# Python 3.12. Pins retain prebuilt wheels on Intel macOS.
+rembg[cpu]==2.0.67
+numba==0.61.2
+llvmlite==0.44.0

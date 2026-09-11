@@ -14,7 +14,8 @@
 .pet-home button:focus-visible, .pet-home a:focus-visible, .pet-home select:focus-visible { outline: 3px solid #ad5d26; outline-offset: 4px; }
 .home-scene-toolbar button { border: 1px solid #b9c3ac; border-radius: 5px; padding: 8px 12px; background: transparent; color: var(--ink); font-size: 12px; letter-spacing: 0; }
 .home-scene-toolbar button[aria-pressed=true] { color: white; background: var(--moss); }
-.home-room { position: relative; min-height: 490px; overflow: hidden; background: #dce1c8; isolation: isolate; }
+.home-room { position: relative; min-height: 560px; overflow: hidden; background: #dce1c8; isolation: isolate; }
+.home-room-backdrop { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; object-position: center; pointer-events: none; user-select: none; }
 .home-wall { position: absolute; inset: 0 0 46%; background: repeating-linear-gradient(90deg, transparent 0 78px, #aab89422 79px 80px), linear-gradient(100deg, #d4ddc4, #e7e7cf); border-bottom: 12px solid #aabb95; box-shadow: 0 6px 0 #718a6650; }
 .home-window { position: absolute; left: 13%; top: 26px; width: 122px; height: 152px; overflow: hidden; border: 9px solid #f9f3df; border-radius: 65px 65px 2px 2px; background: #c4ded6; box-shadow: 0 4px 0 #b8ba9e, 14px 16px 30px #6a865526; }
 .home-sun { position: absolute; top: 22px; right: 21px; width: 32px; height: 32px; background: #f5d994; border-radius: 50%; }
@@ -27,8 +28,14 @@
 .home-wall-lamp::after { content: ''; position: absolute; bottom: -25px; left: -30px; width: 60px; height: 30px; border-radius: 50% 50% 8% 8%; background: #bc8851; box-shadow: 0 30px 50px 15px #ffe7a340; }
 .home-floor { position: absolute; inset: 54% 0 0; background: repeating-linear-gradient(0deg, transparent 0 48px, #b78e612b 49px 50px), repeating-linear-gradient(90deg, #dec096 0 118px, #d6b589 119px 120px); }
 .home-floor::after { content: ''; position: absolute; top: -6px; left: 7%; width: 47%; height: 112px; transform: skewX(-25deg); background: linear-gradient(#fff5c750, #fff5c708); pointer-events: none; }
-.home-resident { position: absolute; z-index: 2; left: calc(50% - 83px); top: 101px; width: 166px; height: 172px; padding: 0; border: none; background: none; color: inherit; transform-origin: bottom; }
+.home-resident { position: absolute; z-index: 2; left: calc(50% - 83px); top: 28%; width: 166px; height: 172px; padding: 0; border: none; background: none; color: inherit; transform-origin: bottom; }
 .home-pet-art { width: 100%; height: 100%; overflow: visible; }
+.home-painted-pet { position: relative; display: block; width: 100%; height: 100%; animation: home-breathe 4s ease-in-out infinite; }
+.home-painted-pet > img { display: block; width: 100%; height: 100%; object-fit: contain; user-select: none; filter: drop-shadow(0 5px 3px #42351f30); }
+.home-painted-bandana { position: absolute; width: 35%; left: 32.5%; top: 43%; }
+.home-painted-pet--cat .home-painted-bandana, .home-painted-pet--fox .home-painted-bandana { top: 39%; }
+.home-painted-pet--rabbit .home-painted-bandana { top: 40%; }
+.home-resident--feed .home-painted-pet { animation: home-look .35s ease-in-out 5; }
 .home-pet-emoji { font-size: 105px; line-height: 172px; display: block; animation: home-breathe 4s ease-in-out infinite; }
 .home-pet-head { transform-origin: 110px 135px; animation: home-look 6s ease-in-out infinite; }
 .home-pet-tail { transform-origin: 154px 161px; animation: home-wag 1.6s ease-in-out infinite; }
@@ -36,7 +43,7 @@
 .home-resident--pet, .home-resident--play { animation: home-hop .5s ease-in-out 3; }
 .home-resident--feed .home-pet-head { animation: home-look .35s ease-in-out 5; }
 .home-affection { position: absolute; top: -5px; right: -3px; color: #a85539; font: 32px Georgia, serif; animation: home-heart 2.2s ease-out forwards; }
-.home-placement-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(4, 1fr); gap: 4px 8px; position: absolute; inset: 272px 6% 14px; }
+.home-placement-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(4, 1fr); gap: 4px 8px; position: absolute; z-index: 2; inset: 62% 6% 14px; }
 .home-floor-cell { min-width: 0; border: 1px solid transparent; background: transparent; border-radius: 8px; color: #36543c; display: grid; place-items: center; position: relative; padding: 0; }
 .home-floor-cell > span { font-size: 28px; line-height: 32px; filter: drop-shadow(2px 3px 1px #65492125); }
 .home-floor-cell:not(.is-furnished) > span { visibility: hidden; }
@@ -86,7 +93,7 @@
 .home-outings h3 { margin: 0 0 7px; font: 18px Georgia, serif; }
 .home-outings p { margin: 0; font-size: 11px; line-height: 1.5; }
 .home-outings b { margin-left: auto; }
-.home-empty-pet { position: absolute; z-index: 2; top: 130px; left: 0; width: 100%; text-align: center; font: 18px Georgia, serif; }
+.home-empty-pet { position: absolute; z-index: 2; top: 32%; left: 50%; transform: translateX(-50%); width: min(280px, 85%); padding: 18px; border: 1px solid #c8ccb8; border-radius: 9px; background: #fff9e9f2; text-align: center; font: 18px Georgia, serif; }
 .home-empty-pet > span { font-size: 45px; }
 .home-empty-pet a { color: var(--ink); font-size: 14px; }
 .home-alert { padding: 13px 18px; border: 1px solid #c99970; background: #fff0df; margin: 15px 0; border-radius: 6px; font-size: 13px; }
@@ -100,3 +107,4 @@
 @media (max-width: 950px) { .home-layout { grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; } .home-heading h1 { font-size: 56px; } .home-outings { grid-template-columns: 1fr 1fr; } .home-outings > div { grid-column: 1 / -1; } .home-picture { right: 8%; font-size: 12px; padding: 12px; } .home-window { left: 7%; width: 100px; } }
 @media (max-width: 700px) { .pet-home { padding: 28px 16px 40px; } .home-heading { align-items: start; } .home-heading h1 { font-size: 47px; } .home-heading > p { display: none; } .home-kicker { font-size: 8px; letter-spacing: 1.3px; } .home-layout { grid-template-columns: 1fr; } .home-companion { padding: 22px 8px 0; } .home-room { min-height: 460px; } .home-placement-grid { inset: 257px 4% 12px; gap: 4px; } .home-resident { top: 90px; } .home-window { height: 140px; } .home-outings { gap: 12px; } .home-outings > a { padding: 12px; gap: 8px; } .home-outings > a > span { font-size: 25px; } .home-outings h3 { font-size: 16px; } .home-scene-toolbar { padding: 12px; font-size: 8px; } .home-decorate { padding: 18px; } .home-item-shelf { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (prefers-reduced-motion: reduce) { .home-pet-head, .home-pet-tail, .home-pet-eyes, .home-pet-emoji, .home-resident, .home-resident--feed .home-pet-head, .home-affection { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .home-painted-pet, .home-resident--feed .home-painted-pet { animation: none; } }

@@ -1,0 +1,11 @@
+body { margin: 0; background: #f7f3e8; }
+.art-preview-note { font-size: 13px; line-height: 1.7; color: #59674e; margin: 20px 0; }
+.art-species-picker { display: grid; gap: 10px; }
+.art-species-picker button { text-transform: capitalize; background: #e5e8d6; color: #283e31; }
+.art-species-picker button[aria-pressed=true] { background: #315e49; color: #fffbed; }
+.art-preview .home-scene-toolbar select { width: auto; margin-top: 5px; }
+.art-proof-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.art-proof-grid figure { margin: 0; }
+.art-proof-grid img { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 8px; }
+.art-proof-grid figcaption { padding: 10px 0; font: 18px Georgia, serif; }
+@media (max-width: 700px) { .art-proof-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

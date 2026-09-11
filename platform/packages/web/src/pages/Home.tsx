@@ -2,11 +2,15 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiError, type HomeAction, type HomeCommand, type PetHome } from '@paws/core';
 import { Header } from '../components/Header';
 import { HomePet } from '../components/HomePet';
+import { ItemArt } from '../components/ItemArt';
 import { CompanionStory } from '../components/CompanionStory';
 import { call, client } from '../lib/api';
 import { petEmoji } from '../lib/pets';
+import { petArtwork, petArtDescriptions } from '../lib/art';
+import roomBackdrop from '../assets/home/clover-room-v1.webp';
 import './home.css';
 import './companion.css';
+import './home-accessibility.css';
 
 const messages: Record<string, string> = {
   stale_home: 'Your home changed in another window. We’ve refreshed it; please try again.',
@@ -31,6 +35,7 @@ export function Home() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('A quiet corner, just for you and your pets.');
   const [decorating, setDecorating] = useState(false);
+  const [painted, setPainted] = useState(true);
   const [tool, setTool] = useState('');
   const [foodId, setFoodId] = useState('');
   const [toyId, setToyId] = useState('');
@@ -120,11 +125,13 @@ export function Home() {
     {error && <div class="home-alert" role="alert"><p>{error}</p>{pending ? <button disabled={busy} onClick={() => void send(pending)}>Retry saved action</button> : <button disabled={busy} onClick={() => void reopen()}>Refresh home</button>}</div>}
     {!home ? <p role="status">{busy ? 'Opening the cottage door…' : 'Your room will be here when you reconnect.'}</p> : <>
       <div class="home-layout"><section class="home-scene-panel" aria-label="Your pet’s room">
-        <div class="home-scene-toolbar"><span><i /> HOME SWEET HOME</span><button disabled={disabled} aria-pressed={decorating} onClick={() => setDecorating(!decorating)}>{decorating ? 'Done decorating' : 'Arrange room'} <span aria-hidden="true">↗</span></button></div>
+        <div class="home-scene-toolbar"><span><i /> HOME SWEET HOME</span><label>Pet artwork<select aria-describedby="home-art-help" value={painted ? 'painted' : 'classic'} onChange={(event) => setPainted(event.currentTarget.value === 'painted')}><option value="painted">Painted</option><option value="classic">Classic</option></select></label><button disabled={disabled} aria-pressed={decorating} onClick={() => setDecorating(!decorating)}>{decorating ? 'Done decorating' : 'Arrange room'} <span aria-hidden="true">↗</span></button></div>
+        <p class="home-art-help" id="home-art-help">Painted portraits show your pet’s species and bandana. Choose Classic to see individual coat, marking and smile details.</p>
         <div class={`home-room${decorating ? ' is-decorating' : ''}`}>
           <div class="home-wall" aria-hidden="true"><div class="home-window"><span class="home-sun" /><span class="home-hills" /><i /><b /></div><div class="home-picture">a place<br />to belong<span>✿</span></div><div class="home-wall-lamp" /></div>
           <div class="home-floor" aria-hidden="true" />
-          {pet ? <button class={`home-resident home-personality--${pet.companion?.personality ?? 'curious'} home-resident--${reaction}${!pet.alive ? ' home-resident--remembered' : ''}`} aria-label={`Pet ${pet.name}`} disabled={careDisabled || decorating} onClick={() => act({ action: 'pet', petId: pet.id })}><HomePet species={pet.species} companion={pet.companion} />{['pet', 'play', 'feed'].includes(reaction) && <span class="home-affection" aria-hidden="true">{reaction === 'feed' ? '♡ yum' : pet.companion?.expressions.hearts ? '♥ ♡ ♥' : '♡'}</span>}</button> : <div class="home-empty-pet"><span>♡</span><p>Every home needs a friend.</p><a href="#/pets">Adopt your first pet →</a></div>}
+          <img class="home-room-backdrop" src={roomBackdrop} alt="" aria-hidden="true" draggable={false} onError={(event) => { event.currentTarget.hidden = true; }} />
+          {pet ? <button class={`home-resident home-personality--${pet.companion?.personality ?? 'curious'} home-resident--${reaction}${!pet.alive ? ' home-resident--remembered' : ''}`} aria-label={`Give ${pet.name} some love`} disabled={careDisabled || decorating} onClick={() => act({ action: 'pet', petId: pet.id })}><HomePet species={pet.species} companion={pet.companion} painted={painted} />{['pet', 'play', 'feed'].includes(reaction) && <span class="home-affection" aria-hidden="true">{reaction === 'feed' ? '♡ yum' : pet.companion?.expressions.hearts ? '♥ ♡ ♥' : '♡'}</span>}</button> : <div class="home-empty-pet"><span>♡</span><p>Every home needs a friend.</p><a href="#/pets">Adopt your first pet →</a></div>}
           <div class="home-placement-grid" aria-label="Furniture positions">
             {Array.from({ length: 20 }, (_, position) => {
               const placed = home.placements.find((p) => p.position === position);
@@ -137,11 +144,18 @@ export function Home() {
                 if (removable) act({ action: 'remove', position });
                 else if (addable) act({ action: 'place', itemId: tool, position });
                 else if (playable && item && pet) act({ action: 'play', itemId: item.itemId, petId: pet.id });
-              }}><span aria-hidden="true">{item?.effect.emoji ?? (placed ? '▣' : '+')}</span>{item && <small>{item.name}</small>}</button>;
+              }}>{item ? <ItemArt name={item.name} emoji={item.effect.emoji} /> : <span aria-hidden="true">{placed ? '▣' : '+'}</span>}{item && <small>{item.name}</small>}</button>;
             })}
           </div>
         </div>
         <div class="home-scene-caption" role="status" aria-live="polite"><span aria-hidden="true">✦</span> {busy ? 'Saving your moment…' : notice}</div>
+        <details class="home-room-description">
+          <summary>Room description and placed items</summary>
+          <p>A sunny cottage with honey-colored wooden floors, an arched garden window on the left, and sage-green shelves on the right.</p>
+          {pet && <p>{pet.name} is your {pet.species} companion. {painted && petArtwork.has(pet.species) ? petArtDescriptions.get(pet.species) : `Classic artwork shows ${pet.companion?.appearance.coat ?? 'natural'} coloring and ${pet.companion?.appearance.marking ?? 'natural'} markings.`} {pet.companion && `Your companion wears the ${pet.companion.appearance.bandana} bandana.`}</p>}
+          <p>{home.placements.length} of 20 floor positions are occupied. Choose Arrange room, select an item from the furniture bag, then activate a floor position. You can use the keyboard for every step.</p>
+          {home.placements.length > 0 && <ul>{home.placements.map((placed) => <li key={placed.position}>Row {Math.floor(placed.position / 5) + 1}, column {placed.position % 5 + 1}: {home.items.find((item) => item.itemId === placed.itemId)?.name ?? 'Placed item'}.</li>)}</ul>}
+        </details>
       </section>
       <aside class="home-companion">
         <p class="home-kicker">YOUR LITTLE COMPANION</p>
@@ -157,7 +171,7 @@ export function Home() {
       {pet?.companion && home.adventure && <CompanionStory pet={pet} adventure={home.adventure} adventurePet={home.pets.find((p) => p.id === home.adventure.petId)} disabled={disabled} onAction={act} onChoosePet={setPetId} />}
       {decorating && <section class="home-decorate" aria-label="Furniture bag"><div><p class="home-kicker">MAKE IT YOURS</p><h2>Little things. Big personality.</h2><p>Choose an item, then an empty floor spot. Putting it away keeps it in your inventory.</p></div><div class="home-item-shelf"><button disabled={disabled} aria-pressed={tool === 'remove'} onClick={() => setTool('remove')}><span>↶</span><b>Put away</b><small>Choose a placed item</small></button>{home.items.filter((i) => i.placeable).map((item) => {
         const available = item.quantity - home.placements.filter((p) => p.itemId === item.itemId).length;
-        return <button key={item.itemId} disabled={disabled || available <= 0} aria-pressed={tool === item.itemId} onClick={() => setTool(item.itemId)}><span aria-hidden="true">{item.effect.emoji ?? '▣'}</span><b>{item.name}</b><small>{available} ready to place</small></button>;
+        return <button key={item.itemId} disabled={disabled || available <= 0} aria-pressed={tool === item.itemId} onClick={() => setTool(item.itemId)}><ItemArt name={item.name} emoji={item.effect.emoji} /><b>{item.name}</b><small>{available} ready to place</small></button>;
       })}<a href="#/store"><span>＋</span><b>Find something lovely</b><small>Visit the General Store</small></a></div></section>}
       <section class="home-outings" aria-label="Things to do"><div><p class="home-kicker">BEYOND THE FRONT DOOR</p><h2>A little adventure awaits.</h2></div><a href="#/games"><span aria-hidden="true">⌁</span><div><h3>Out & about</h3><p>Six small worlds to explore together.</p></div><b>↗</b></a><a href="#/store"><span aria-hidden="true">✿</span><div><h3>The General Store</h3><p>Good things for your favorite place.</p></div><b>↗</b></a></section>
     </>}

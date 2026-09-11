@@ -3,6 +3,7 @@ import { ApiError, formatMinor } from '@paws/core';
 import type { StoreItem } from '@paws/core';
 import { Header } from '../components/Header';
 import { Notice } from '../components/Notice';
+import { ItemArt } from '../components/ItemArt';
 import { call, client } from '../lib/api';
 
 export function Store() {
@@ -58,7 +59,7 @@ export function Store() {
             const isBuying = buying[item.id] === true;
             return (
               <div key={item.id} class="card store-card">
-                <div class="store-emoji">{item.effect.emoji}</div>
+                <div class="store-emoji"><ItemArt name={item.name} emoji={item.effect.emoji} /></div>
                 <small class="store-category">{item.category}</small>
                 <h3>{item.name}</h3>
                 <p class="store-description">{item.description}</p>
