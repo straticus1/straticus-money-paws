@@ -24,6 +24,8 @@ export function Header() {
   return (
     <header class="header">
       <div class="header__logo">🐾 paws.money</div>
+      <a href="#/home" class="header__link">Home</a>
+      <a href="#/pets" class="header__link">Pets</a>
       <nav class="header__balances">
         {balances.map((b) => (
           <span key={b.currency} class="balance-chip">

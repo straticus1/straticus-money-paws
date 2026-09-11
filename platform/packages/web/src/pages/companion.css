@@ -1,0 +1,44 @@
+.companion-story { display: grid; grid-template-columns: .9fr 1.15fr 1fr; gap: 22px; margin-top: 34px; align-items: start; }
+.companion-story > article { padding: 25px; border: 1px solid #d2d5c2; border-radius: 9px; background: #faf7ec; min-width: 0; }
+.companion-story h2 { font: 29px/1.1 Georgia, serif; letter-spacing: -.7px; margin: 0 0 15px; }
+.companion-story p { font-size: 12px; line-height: 1.7; }
+.companion-story .home-kicker { font-size: 9px; line-height: 1.6; }
+.companion-story .companion-personality { font: italic 14px/1.6 Georgia, serif; color: #647259; }
+.companion-traits { display: flex; flex-wrap: wrap; gap: 5px; margin: 18px 0; }
+.companion-traits span { padding: 5px 8px; background: #ecead8; border-radius: 4px; font-size: 10px; }
+.companion-favorites { border-top: 1px solid #dddcca; margin: 0 0 20px; padding: 14px 0 0; }
+.companion-favorites div { margin: 0 0 12px; }.companion-favorites dt { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #68735d; }.companion-favorites dd { margin: 4px 0 0; font: 15px Georgia, serif; }
+.companion-bond { background: #e5ebd8; border: 1px solid #ccd6bd; padding: 15px; border-radius: 6px; }
+.companion-bond > span { display: flex; justify-content: space-between; font-size: 9px; letter-spacing: 1px; }.companion-bond h3 { font: 18px Georgia, serif; margin: 10px 0; }
+.companion-bond progress { display: block; width: 100%; height: 7px; accent-color: #657e4b; border: none; border-radius: 6px; }
+.companion-bond progress::-webkit-progress-bar { background: #ccd6bd; border-radius: 6px; }.companion-bond progress::-webkit-progress-value { background: #657e4b; border-radius: 6px; }
+.companion-bond p { font-size: 10px; margin: 8px 0 0; }
+.companion-bandanas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; border: none; padding: 12px 0 0; margin: 15px 0 0; }
+.companion-bandanas legend { font: 14px Georgia, serif; }
+.bandana-swatch { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 1px solid #d6d5c3; border-radius: 4px; background: #fffdf5; padding: 8px 0; min-width: 0; }
+.bandana-swatch span { font-size: 23px; }.bandana-swatch small { font-size: 8px; color: #536049; }.bandana-swatch[aria-pressed=true] { outline: 2px solid #315e49; outline-offset: 1px; }.bandana-swatch:disabled { opacity: .55; }
+.bandana-swatch--moss { color: #315e49; }.bandana-swatch--sunflower { color: #b38222; }.bandana-swatch--berry { color: #a05068; }.bandana-swatch--midnight { color: #485775; }
+.companion-story .companion-expression-note { font-size: 10px; color: #667458; margin: 15px 0 0; }
+.companion-story .companion-adventure { border: 1px solid #b9c6a6; background: #f0f2df; }
+.companion-adventure-top { display: flex; align-items: start; justify-content: space-between; gap: 10px; }.companion-adventure-top time { white-space: nowrap; font: italic 12px Georgia, serif; }
+.companion-keepsake { display: flex; align-items: center; gap: 13px; padding: 16px 0 20px; border-bottom: 1px solid #cfd6bf; margin-bottom: 20px; }
+.companion-keepsake > span { display: grid; place-items: center; flex-shrink: 0; height: 65px; width: 65px; border-radius: 50%; border: 1px solid #d3bf86; background: #f1e3bb; font-size: 30px; transform: rotate(-8deg); }
+.companion-keepsake small { font-size: 8px; letter-spacing: 1px; }.companion-keepsake h3 { font: 21px Georgia, serif; margin: 5px 0; }.companion-keepsake p { margin: 0; font-size: 11px; color: #626f54; }
+.companion-day-partner button { display: block; background: none; border: none; padding: 8px 0; text-decoration: underline; color: #315e49; font-size: 12px; }
+.companion-objectives { list-style: none; padding: 0; margin: 18px 0; display: grid; gap: 18px; }.companion-objectives li { display: flex; gap: 12px; align-items: start; }
+.companion-objectives li > span { border: 1px solid #bfcaae; border-radius: 50%; display: grid; place-items: center; width: 27px; height: 27px; flex-shrink: 0; font-size: 10px; }.companion-objectives .is-complete > span { background: #315e49; color: #fff8e6; border-color: #315e49; }
+.companion-objectives strong { font-size: 12px; font-weight: 600; }.companion-objectives p { font-size: 11px; color: #637356; margin: 4px 0 0; }
+.companion-story .companion-rule { font-size: 10px; line-height: 1.6; color: #647359; margin: 13px 0; }
+.companion-daily-credit { display: flex; flex-direction: column; gap: 7px; border-top: 1px solid #cfd6bf; margin-top: 19px; padding-top: 16px; }.companion-daily-credit strong { font: 15px Georgia, serif; }.companion-daily-credit span { font-size: 11px; }.companion-daily-credit small { font-size: 10px; line-height: 1.6; color: #647359; }
+.companion-story .companion-journal { background: repeating-linear-gradient(0deg, transparent 0 27px, #8d957c09 28px 29px), #fbf6e7; border-top: 5px solid #bd9862; }
+.companion-journal > ol { list-style: none; padding: 0; margin: 23px 0 0; max-height: 590px; overflow: auto; }.companion-journal li { display: flex; gap: 12px; padding-bottom: 20px; margin-bottom: 16px; border-bottom: 1px dashed #d9d2bc; }
+.companion-memory-mark { font-size: 22px; color: #96713b; line-height: 1; }.companion-journal time { font-size: 9px; text-transform: uppercase; color: #7c7960; letter-spacing: .7px; }.companion-journal h3 { font: 16px Georgia, serif; margin: 5px 0; }.companion-journal li p { font-size: 11px; margin: 0 0 5px; color: #696e59; }.companion-journal li small { font-size: 9px; color: #43674b; font-weight: 700; }
+.companion-sr { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.home-pet-badge { display: block; border-radius: 50%; height: 160px; width: 160px; border: 5px solid #fff7df; position: relative; box-shadow: 0 5px 0 #7d805526; }.home-pet-badge .home-pet-emoji { line-height: 150px; font-size: 90px; }
+.home-pet-badge--honey { background: #d8b58a; }.home-pet-badge--silver { background: #c5c1c9; }.home-pet-badge--cocoa { background: #b79b84; }.home-pet-badge--cream { background: #f0e7c9; }
+.home-pet-badge--speckles { background-image: radial-gradient(#fff8e78c 3px, transparent 4px); background-size: 19px 19px; }.home-pet-badge--blaze { background-image: linear-gradient(90deg, transparent 42%, #fff8e77c 42% 58%, transparent 58%); }.home-pet-badge--socks { border-bottom: 18px solid #fff7df; }.home-badge-bandana { position: absolute; width: 80px; left: 35px; bottom: -24px; }
+.home-resident--remembered, .home-resident--remembered * { animation: none !important; }
+.home-personality--gentle .home-pet-tail { animation-duration: 3s; }.home-personality--gentle .home-pet-head { animation-duration: 9s; }.home-personality--playful .home-pet-tail { animation-duration: .8s; }.home-personality--curious .home-pet-head { animation-duration: 3.5s; }
+.companion-favorite-link { color: #315e49; text-underline-offset: 3px; }
+@media (max-width: 1050px) { .companion-story { grid-template-columns: 1fr 1.2fr; }.companion-story .companion-journal { grid-column: 1 / -1; }.companion-journal > ol { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-height: 400px; } }
+@media (max-width: 650px) { .companion-story { grid-template-columns: 1fr; gap: 16px; }.companion-story > article { padding: 22px; }.companion-journal > ol { display: block; }.companion-story .companion-adventure { order: -1; }.companion-bandanas { gap: 10px; }.bandana-swatch small { font-size: 10px; } }

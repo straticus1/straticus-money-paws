@@ -88,6 +88,63 @@ export const inventory = pgTable('inventory', {
   quantity: integer('quantity').notNull().default(0),
 });
 
+export interface HomePlacement { position: number; itemId: string }
+
+export const petHomes = pgTable('pet_homes', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull().default(0),
+  placements: jsonb('placements').$type<HomePlacement[]>().notNull().default([]),
+  nextCareAt: timestamp('next_care_at', { withTimezone: true }).notNull().defaultNow(),
+  windowStartedAt: timestamp('window_started_at', { withTimezone: true }).notNull().defaultNow(),
+  actionCount: integer('action_count').notNull().default(0),
+});
+
+export const homeActions = pgTable('home_actions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  actionId: uuid('action_id').notNull(),
+  requestHash: text('request_hash').notNull(),
+  response: jsonb('response').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex('home_actions_user_id_action_id_key').on(table.userId, table.actionId)]);
+
+export const petCompanions = pgTable('pet_companions', {
+  petId: uuid('pet_id').primaryKey().references(() => pets.id, { onDelete: 'cascade' }),
+  personality: text('personality', { enum: ['curious', 'gentle', 'playful'] }).notNull(),
+  coat: text('coat', { enum: ['honey', 'silver', 'cocoa', 'cream'] }).notNull(),
+  marking: text('marking', { enum: ['blaze', 'socks', 'speckles'] }).notNull(),
+  bandana: text('bandana', { enum: ['moss', 'sunflower', 'berry', 'midnight'] }).notNull().default('moss'),
+  favoriteFood: text('favorite_food').notNull(),
+  favoriteToy: text('favorite_toy').notNull(),
+  favoriteGame: text('favorite_game').notNull(),
+  bondXp: integer('bond_xp').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const petMemories = pgTable('pet_memories', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  petId: uuid('pet_id').notNull().references(() => pets.id, { onDelete: 'cascade' }),
+  eventKey: text('event_key').notNull(),
+  kind: text('kind').notNull(),
+  title: text('title').notNull(),
+  detail: text('detail').notNull(),
+  xpDelta: integer('xp_delta').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex('pet_memories_pet_id_event_key_key').on(table.petId, table.eventKey)]);
+
+export const petDailyAdventures = pgTable('pet_daily_adventures', {
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  adventureDate: date('adventure_date').notNull(),
+  petId: uuid('pet_id').notNull().references(() => pets.id, { onDelete: 'cascade' }),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  affectionAt: timestamp('affection_at', { withTimezone: true }),
+  fedAt: timestamp('fed_at', { withTimezone: true }),
+  gameSessionId: uuid('game_session_id'),
+  gameType: text('game_type'),
+  claimedAt: timestamp('claimed_at', { withTimezone: true }),
+  keepsakeId: uuid('keepsake_id').references(() => storeItems.id),
+}, (table) => [uniqueIndex('pet_daily_adventures_pkey').on(table.userId, table.adventureDate)]);
+
 export const ledgerAccounts = pgTable('ledger_accounts', {
   id: uuid('id').primaryKey().defaultRandom(),
   ownerUserId: uuid('owner_user_id').references(() => users.id),

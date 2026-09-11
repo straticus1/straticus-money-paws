@@ -15,6 +15,61 @@ export interface Pet {
   alive: boolean;
 }
 
+export interface HomeItem {
+  itemId: string;
+  quantity: number;
+  name: string;
+  category: string;
+  effect: { emoji?: string };
+  placeable: boolean;
+}
+
+export interface PetHome {
+  version: number;
+  placements: Array<{ position: number; itemId: string }>;
+  pets: Array<Pet & { companion: Companion }>;
+  items: HomeItem[];
+  nextCareAt: string;
+  serverNow: string;
+  adventure: DailyAdventure;
+}
+
+export type Bandana = 'moss' | 'sunflower' | 'berry' | 'midnight';
+export interface Companion {
+  personality: 'curious' | 'gentle' | 'playful';
+  appearance: { coat: 'honey' | 'silver' | 'cocoa' | 'cream'; marking: 'blaze' | 'socks' | 'speckles'; bandana: Bandana };
+  favorites: { food: string; toy: string; game: string; gameName: string };
+  bond: { xp: number; level: string; levelStart: number; nextLevelAt: number | null };
+  unlocks: Array<{ key: Bandana; xp: number; unlocked: boolean }>;
+  expressions: { smile: boolean; hearts: boolean };
+  dailyCare: { affection: boolean; feed: boolean; play: boolean };
+  journal: Array<{ id: string; kind: string; title: string; detail: string; xp: number; createdAt: string }>;
+}
+
+export interface DailyAdventure {
+  date: string;
+  resetsAt: string;
+  petId: string | null;
+  startedAt: string | null;
+  affection: boolean;
+  fed: boolean;
+  game: boolean;
+  gameName: string | null;
+  claimed: boolean;
+  keepsake: { id: string; name: string; emoji: string; description: string };
+}
+
+export type HomeAction =
+  | { action: 'pet'; petId: string }
+  | { action: 'play' | 'feed'; petId: string; itemId: string }
+  | { action: 'place'; itemId: string; position: number }
+  | { action: 'remove'; position: number }
+  | { action: 'begin_adventure' | 'claim_adventure'; petId: string }
+  | { action: 'equip_bandana'; petId: string; bandana: Bandana };
+
+export type HomeCommand = HomeAction & { actionId: string; expectedVersion: number };
+export interface HomeResponse { home: PetHome; action?: HomeAction['action']; message?: string }
+
 export interface PetEffect {
   hungerRestore: number;
   happinessBoost: number;

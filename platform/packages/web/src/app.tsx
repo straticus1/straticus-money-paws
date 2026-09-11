@@ -14,6 +14,7 @@ import { PocketPost } from './pages/PocketPost';
 import { ParadePractice } from './pages/ParadePractice';
 import { Honors } from './pages/Honors';
 import { Settings } from './pages/Settings';
+import { Home } from './pages/Home';
 
 function getRoute(): string {
   // hash is like "#/login" → "/login", or "#/" → "/"
@@ -55,6 +56,11 @@ export function App() {
   }
 
   switch (route) {
+    case '/':
+    case '/home':
+      return <Home />;
+    case '/pets':
+      return <Dashboard />;
     case '/login':
       return <Login />;
     case '/register':

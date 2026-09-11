@@ -1,0 +1,102 @@
+.pet-home { --ink: #283e31; --moss: #315e49; --paper: #f7f3e8; --line: #d7d4c4; max-width: 1260px; margin: auto; padding: 52px 32px 64px; color: var(--ink); font-family: 'Avenir Next', 'Trebuchet MS', sans-serif; }
+.pet-home * { box-sizing: border-box; }
+.home-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 34px; }
+.home-kicker { font-size: 10px; letter-spacing: 2px; font-weight: 700; margin: 0 0 16px; }
+.home-heading h1 { font: 68px/.98 'Palatino Linotype', Palatino, Georgia, serif; letter-spacing: -2.5px; margin: 0; }
+.home-heading h1 em { color: #647a53; font-weight: 400; }
+.home-heading > p { font: 18px/1.6 Georgia, serif; color: #68725e; padding-bottom: 4px; }
+.home-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; }
+.home-scene-panel { border: 1px solid #c8ccb8; background: var(--paper); border-radius: 12px; overflow: hidden; align-self: start; }
+.home-scene-toolbar { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 10px; letter-spacing: 1.5px; font-weight: 700; }
+.home-scene-toolbar i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #638752; margin-right: 6px; }
+.pet-home button { font: inherit; cursor: pointer; }
+.pet-home button:disabled { cursor: default; }
+.pet-home button:focus-visible, .pet-home a:focus-visible, .pet-home select:focus-visible { outline: 3px solid #ad5d26; outline-offset: 4px; }
+.home-scene-toolbar button { border: 1px solid #b9c3ac; border-radius: 5px; padding: 8px 12px; background: transparent; color: var(--ink); font-size: 12px; letter-spacing: 0; }
+.home-scene-toolbar button[aria-pressed=true] { color: white; background: var(--moss); }
+.home-room { position: relative; min-height: 490px; overflow: hidden; background: #dce1c8; isolation: isolate; }
+.home-wall { position: absolute; inset: 0 0 46%; background: repeating-linear-gradient(90deg, transparent 0 78px, #aab89422 79px 80px), linear-gradient(100deg, #d4ddc4, #e7e7cf); border-bottom: 12px solid #aabb95; box-shadow: 0 6px 0 #718a6650; }
+.home-window { position: absolute; left: 13%; top: 26px; width: 122px; height: 152px; overflow: hidden; border: 9px solid #f9f3df; border-radius: 65px 65px 2px 2px; background: #c4ded6; box-shadow: 0 4px 0 #b8ba9e, 14px 16px 30px #6a865526; }
+.home-sun { position: absolute; top: 22px; right: 21px; width: 32px; height: 32px; background: #f5d994; border-radius: 50%; }
+.home-hills { position: absolute; width: 170px; height: 100px; border-radius: 50%; background: #8daa78; top: 92px; left: -45px; box-shadow: 70px -17px 0 #a9bd8a; }
+.home-window i { position: absolute; top: 0; bottom: 0; left: 48%; width: 5px; background: #f9f3df; }
+.home-window b { position: absolute; top: 55%; left: 0; right: 0; height: 5px; background: #f9f3df; }
+.home-picture { position: absolute; top: 46px; right: 17%; border: 7px solid #b78a58; padding: 14px 17px 8px; background: #f7eaca; font: italic 15px/1.2 Georgia, serif; text-align: center; box-shadow: 3px 5px 0 #84957222; transform: rotate(4deg); }
+.home-picture span { display: block; font-size: 27px; color: #a67943; margin-top: 3px; }
+.home-wall-lamp { position: absolute; top: 0; left: 54%; height: 36px; border-left: 2px solid #647253; }
+.home-wall-lamp::after { content: ''; position: absolute; bottom: -25px; left: -30px; width: 60px; height: 30px; border-radius: 50% 50% 8% 8%; background: #bc8851; box-shadow: 0 30px 50px 15px #ffe7a340; }
+.home-floor { position: absolute; inset: 54% 0 0; background: repeating-linear-gradient(0deg, transparent 0 48px, #b78e612b 49px 50px), repeating-linear-gradient(90deg, #dec096 0 118px, #d6b589 119px 120px); }
+.home-floor::after { content: ''; position: absolute; top: -6px; left: 7%; width: 47%; height: 112px; transform: skewX(-25deg); background: linear-gradient(#fff5c750, #fff5c708); pointer-events: none; }
+.home-resident { position: absolute; z-index: 2; left: calc(50% - 83px); top: 101px; width: 166px; height: 172px; padding: 0; border: none; background: none; color: inherit; transform-origin: bottom; }
+.home-pet-art { width: 100%; height: 100%; overflow: visible; }
+.home-pet-emoji { font-size: 105px; line-height: 172px; display: block; animation: home-breathe 4s ease-in-out infinite; }
+.home-pet-head { transform-origin: 110px 135px; animation: home-look 6s ease-in-out infinite; }
+.home-pet-tail { transform-origin: 154px 161px; animation: home-wag 1.6s ease-in-out infinite; }
+.home-pet-eyes { transform-box: fill-box; transform-origin: center; animation: home-blink 5s infinite; }
+.home-resident--pet, .home-resident--play { animation: home-hop .5s ease-in-out 3; }
+.home-resident--feed .home-pet-head { animation: home-look .35s ease-in-out 5; }
+.home-affection { position: absolute; top: -5px; right: -3px; color: #a85539; font: 32px Georgia, serif; animation: home-heart 2.2s ease-out forwards; }
+.home-placement-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(4, 1fr); gap: 4px 8px; position: absolute; inset: 272px 6% 14px; }
+.home-floor-cell { min-width: 0; border: 1px solid transparent; background: transparent; border-radius: 8px; color: #36543c; display: grid; place-items: center; position: relative; padding: 0; }
+.home-floor-cell > span { font-size: 28px; line-height: 32px; filter: drop-shadow(2px 3px 1px #65492125); }
+.home-floor-cell:not(.is-furnished) > span { visibility: hidden; }
+.home-floor-cell small { position: absolute; z-index: 3; bottom: 90%; background: #283e31; color: #fffbed; padding: 5px; border-radius: 3px; font-size: 10px; width: max-content; max-width: 130px; display: none; pointer-events: none; }
+.home-floor-cell:hover small, .home-floor-cell:focus-visible small { display: block; }
+.is-decorating .home-floor-cell { border: 1px dashed #627a5570; background: #faf4d514; }
+.is-decorating .home-floor-cell:not(.is-furnished) > span { visibility: visible; font-size: 20px; opacity: .45; }
+.home-floor-cell:not(:disabled):hover { background: #fff1bc80; border-color: #627a55; }
+.home-scene-caption { min-height: 51px; padding: 15px 18px; font: italic 14px Georgia, serif; color: #626e54; }
+.home-scene-caption > span { color: #a97b39; margin-right: 7px; }
+.home-companion { border-top: 2px solid var(--ink); padding: 22px 4px 0; }
+.home-pet-select { display: block; font-size: 11px; color: #646e60; }
+.home-pet-select select { margin-top: 7px; }
+.pet-home select { display: block; width: 100%; border: 1px solid var(--line); background: #fffdf5; border-radius: 5px; padding: 9px 7px; color: var(--ink); font: 12px 'Avenir Next', 'Trebuchet MS', sans-serif; }
+.home-companion h2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; overflow-wrap: anywhere; font: 37px Georgia, serif; margin: 18px 0 5px; }
+.home-companion h2 span { font-size: 27px; }
+.home-pet-mood { font: italic 13px Georgia, serif; margin: 0 0 20px; color: #6d755d; }
+.home-vitals { display: grid; gap: 9px; margin-bottom: 22px; }
+.home-vitals label > span { display: flex; justify-content: space-between; font-size: 11px; }
+.home-vitals b { font-weight: 400; color: #69745d; }
+.home-vitals meter { display: block; width: 100%; height: 12px; accent-color: #7e976c; }
+.home-vitals meter::-webkit-meter-bar { border: none; background: #e5e6d8; border-radius: 10px; }
+.home-vitals meter::-webkit-meter-optimum-value { background: #809970; }
+.home-primary { display: block; text-align: center; width: 100%; border: none; border-radius: 5px; padding: 13px 14px; background: var(--moss); color: #fffbed; font-size: 13px; text-decoration: none; }
+.home-primary:disabled, .home-care-line button:disabled { opacity: .5; }
+.home-care-line { display: flex; align-items: end; gap: 8px; margin-top: 14px; }
+.home-care-line label { flex: 1; min-width: 0; font-size: 11px; }
+.home-care-line select { margin-top: 6px; }
+.home-care-line button { background: #e5e8d6; color: var(--ink); border: 1px solid #c5ceb7; padding: 9px 12px; border-radius: 5px; font-size: 12px; min-height: 36px; }
+.home-care-note { font-size: 11px; color: #68765e; line-height: 1.6; min-height: 35px; }
+.home-text-link { display: inline-block; color: var(--moss); font-size: 12px; padding: 8px 0; }
+.home-decorate { border: 1px solid var(--line); padding: 25px; background: #f5f0df; margin-top: 24px; border-radius: 8px; }
+.home-decorate h2, .home-outings h2 { font: 26px Georgia, serif; margin: 0 0 10px; }
+.home-decorate p:not(.home-kicker) { font-size: 12px; color: #69705e; line-height: 1.6; }
+.home-item-shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 20px; }
+.home-item-shelf > * { text-align: left; display: flex; flex-direction: column; align-items: start; gap: 7px; padding: 13px; border: 1px solid #c9ceba; border-radius: 5px; background: #fcf9ed; color: var(--ink); text-decoration: none; }
+.home-item-shelf > [aria-pressed=true] { border-color: var(--moss); box-shadow: inset 0 0 0 1px var(--moss); background: #e5ead6; }
+.home-item-shelf > button:disabled { opacity: .5; }
+.home-item-shelf span { font-size: 25px; }
+.home-item-shelf b { font-size: 12px; font-weight: 600; }
+.home-item-shelf small { font-size: 10px; color: #646d59; }
+.home-outings { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; gap: 25px; padding-top: 36px; margin-top: 34px; border-top: 1px solid var(--line); }
+.home-outings .home-kicker { font-size: 9px; letter-spacing: 1.5px; }
+.home-outings > a { display: flex; align-items: center; gap: 15px; color: var(--ink); text-decoration: none; min-height: 100px; padding: 14px; border-radius: 7px; background: #e9ecdc; }
+.home-outings > a:last-child { background: #eee4cf; }
+.home-outings > a > span { font-size: 37px; }
+.home-outings h3 { margin: 0 0 7px; font: 18px Georgia, serif; }
+.home-outings p { margin: 0; font-size: 11px; line-height: 1.5; }
+.home-outings b { margin-left: auto; }
+.home-empty-pet { position: absolute; z-index: 2; top: 130px; left: 0; width: 100%; text-align: center; font: 18px Georgia, serif; }
+.home-empty-pet > span { font-size: 45px; }
+.home-empty-pet a { color: var(--ink); font-size: 14px; }
+.home-alert { padding: 13px 18px; border: 1px solid #c99970; background: #fff0df; margin: 15px 0; border-radius: 6px; font-size: 13px; }
+.home-alert button { padding: 8px 12px; border: 1px solid #b88150; background: #fff8ee; color: #553d25; border-radius: 4px; }
+@keyframes home-look { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg) translateY(-2px); } }
+@keyframes home-wag { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(9deg); } }
+@keyframes home-blink { 0%, 42%, 46%, 100% { transform: scaleY(1); } 44% { transform: scaleY(.1); } }
+@keyframes home-breathe { 50% { transform: translateY(-4px); } }
+@keyframes home-hop { 50% { transform: translateY(-10px) rotate(3deg); } }
+@keyframes home-heart { 0% { opacity: 0; transform: translateY(10px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-30px); } }
+@media (max-width: 950px) { .home-layout { grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; } .home-heading h1 { font-size: 56px; } .home-outings { grid-template-columns: 1fr 1fr; } .home-outings > div { grid-column: 1 / -1; } .home-picture { right: 8%; font-size: 12px; padding: 12px; } .home-window { left: 7%; width: 100px; } }
+@media (max-width: 700px) { .pet-home { padding: 28px 16px 40px; } .home-heading { align-items: start; } .home-heading h1 { font-size: 47px; } .home-heading > p { display: none; } .home-kicker { font-size: 8px; letter-spacing: 1.3px; } .home-layout { grid-template-columns: 1fr; } .home-companion { padding: 22px 8px 0; } .home-room { min-height: 460px; } .home-placement-grid { inset: 257px 4% 12px; gap: 4px; } .home-resident { top: 90px; } .home-window { height: 140px; } .home-outings { gap: 12px; } .home-outings > a { padding: 12px; gap: 8px; } .home-outings > a > span { font-size: 25px; } .home-outings h3 { font-size: 16px; } .home-scene-toolbar { padding: 12px; font-size: 8px; } .home-decorate { padding: 18px; } .home-item-shelf { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .home-pet-head, .home-pet-tail, .home-pet-eyes, .home-pet-emoji, .home-resident, .home-resident--feed .home-pet-head, .home-affection { animation: none; } }

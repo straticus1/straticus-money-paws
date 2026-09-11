@@ -4,6 +4,8 @@ import type {
   AccountSettings,
   Balance,
   InventoryItem,
+  HomeCommand,
+  HomeResponse,
   LeaderboardEntry,
   LanternLinesAction,
   LanternLinesResponse,
@@ -142,6 +144,14 @@ export class PawsClient {
   async pets(): Promise<Pet[]> {
     const response = await this.request<{ pets: Pet[] }>('GET', '/api/v1/pets');
     return response.pets;
+  }
+
+  async home(): Promise<HomeResponse> {
+    return this.request('GET', '/api/v1/home');
+  }
+
+  async actHome(command: HomeCommand): Promise<HomeResponse> {
+    return this.request('POST', '/api/v1/home/actions', command);
   }
 
   async createPet(name: string, species: string): Promise<Pet> {

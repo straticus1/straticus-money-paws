@@ -16,6 +16,36 @@ PHP app is archived in `../legacy/` and frozen — security patches only.
 | `@paws/core` | Typed API client SDK (browser + node) | ✅ 24 tests |
 | `@paws/web` | Preact SPA: account settings, honors, pets, store, wallet, and games | ✅ builds |
 
+## Interactive pet home
+
+The default signed-in page is now the private Clover Room (`#/home`). The pet
+management page remains at `#/pets`. Run migrations and the catalog seed before
+starting the updated API; `0008_pet_home.sql` adds room state and action receipts.
+The seed adds Clover Crunch and Sunbeam Nibbles, 5 PAWS food items, so earned game
+currency can fund pet care without a cash deposit. Migration
+`0009_companion_memories.sql` adds persistent identity, bond, daily adventures,
+cosmetic unlocks, and journal entries. See [companion memories](docs/COMPANION-MEMORIES.md)
+for the next playable loop and its daily credit rules.
+
+- Give affection, feed owned food, or play with an owned toy. Dogs, cats, foxes,
+  and rabbits have original animated SVG portraits; other species use animated
+  species icons. Reduced-motion preferences are respected.
+- Arrange owned toys, houses, trees, carriers, habitats, and décor in 20 room
+  positions. Placement never creates or consumes inventory; every placed copy
+  must be owned. Removing it makes that copy available for placement again.
+- Care actions use a shared account cooldown of 10 seconds. The home command
+  budget is 30 validated attempts per account per minute, enforced in PostgreSQL
+  across API instances. Other endpoints retain their existing limits.
+- Commands bind an action ID to its exact validated payload and expected room
+  version. Exact retries replay their original result; changed payloads and stale
+  room versions are rejected. Rejections generate security audit events.
+
+This is the first playable slice of the
+[next-generation plan](docs/NEXT-GENERATION-PET-GAME.md), not the complete roadmap.
+AI generation, breeding, memberships, paid checkout, passkeys, bot classification,
+and artwork delivery controls are still future work. Home care awards no currency
+and does not change game reward rules. See [home verification](docs/PET-HOME.md).
+
 ## Money invariants (do not weaken)
 
 - All amounts are **bigint minor units** (cents). No floats, ever. Wire format is strings.

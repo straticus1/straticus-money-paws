@@ -18,6 +18,7 @@ import { registerLanternLinesRoutes } from './routes/lantern-lines.js';
 import { registerPocketPostRoutes } from './routes/pocket-post.js';
 import { registerParadePracticeRoutes } from './routes/parade-practice.js';
 import { registerCommunityRoutes } from './routes/community.js';
+import { registerHomeRoutes } from './routes/home.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -121,6 +122,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       registerAuthRoutes(v1, db);
       registerMeRoutes(v1, db);
       registerPetRoutes(v1, db);
+      registerHomeRoutes(v1, db);
       registerStoreRoutes(v1, db);
       registerGameRoutes(v1, db);
       registerTrailTailsRoutes(v1, db);
